@@ -1,0 +1,14 @@
+{
+  "name": "@obverse/sdk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Generated Obverse program client and the types shared by app/ and server/",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
+}

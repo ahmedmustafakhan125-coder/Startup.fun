@@ -1,0 +1,36 @@
+# dependencies and build output
+node_modules/
+dist/
+dist-preview/
+build/
+target/
+.anchor/
+test-ledger/
+.surfpool/
+.yarn/
+**/*.rs.bk
+*.tsbuildinfo
+
+# secrets: env files and keypairs never go in git
+.env
+.env.*
+!.env.example
+*-keypair.json
+*.keypair.json
+keypairs/
+id.json
+*.pem
+*.key
+
+# database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+server/prisma/dev.db*
+server/src/generated/
+
+# local tooling
+.DS_Store
+.claude/settings.local.json
+*.log

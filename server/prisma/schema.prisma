@@ -1,0 +1,11 @@
+// Database schema. SQLite on devnet; keep every type Postgres-compatible
+// (ARCHITECTURE.md section 9.3). Models arrive in Phase 6.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
