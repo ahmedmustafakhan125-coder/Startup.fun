@@ -1,0 +1,21 @@
+{
+  "name": "obverse-scripts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Devnet init, seed and demo scripts",
+  "scripts": {
+    "init": "tsx init.ts",
+    "seed": "tsx seed.ts",
+    "demo": "tsx demo.ts"
+  },
+  "dependencies": {
+    "@solana-program/compute-budget": "^0.20.0",
+    "@solana-program/system": "^0.16.0",
+    "@solana-program/token": "^0.18.0",
+    "@solana/kit": "^8.6.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}

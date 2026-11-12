@@ -4,11 +4,22 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Generated Obverse program client and the types shared by app/ and server/",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate": "node generate.mjs"
   },
   "devDependencies": {
+    "@codama/nodes-from-anchor": "^1.5.6",
+    "@codama/renderers-js": "^2.9.0",
+    "@types/node": "^26.6.6",
+    "codama": "^1.11.0",
     "typescript": "^5.9.0"
+  },
+  "dependencies": {
+    "@solana/kit": "^8.6.0",
+    "@solana/program-client-core": "^8.6.0"
   }
 }

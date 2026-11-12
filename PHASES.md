@@ -117,19 +117,19 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 
 **Goal:** the program is live on devnet with the same sample startups the mock shows.
 
-- [ ] Deploy to devnet. Verify the program account with the `solana-explorer` MCP.
-- [ ] Generate the TypeScript client and types into `sdk/` using the method the `solana` MCP recommends.
-- [ ] `scripts/init`: create config with devnet timing, demo USDC and the operator key.
-- [ ] `scripts/seed`: list the sample startups from `app/src/data/seed.ts`, fill some raises, make
+- [x] Deploy to devnet. Verify the program account with the `solana-explorer` MCP.
+- [x] Generate the TypeScript client and types into `sdk/` using the method the `solana` MCP recommends.
+- [x] `scripts/init`: create config with devnet timing, demo USDC and the operator key.
+- [x] `scripts/seed`: list the sample startups from `app/src/data/seed.ts`, fill some raises, make
       trades, set one to Red, so each lifecycle state exists on-chain.
-- [ ] `scripts/demo`: one command that walks a startup from listing to refund and prints explorer links.
+- [x] `scripts/demo`: one command that walks a startup from listing to refund and prints explorer links.
 
 **Done when**
 
-- [ ] The summary lists the program ID, config address and demo USDC mint, each confirmed through the
+- [x] The summary lists the program ID, config address and demo USDC mint, each confirmed through the
       `solana-explorer` MCP.
-- [ ] `scripts/demo` completes on devnet and every printed transaction shows as successful.
-- [ ] Program ID and addresses are written to `.env.example` files, not hard-coded.
+- [x] `scripts/demo` completes on devnet and every printed transaction shows as successful.
+- [x] Program ID and addresses are written to `.env.example` files, not hard-coded.
 
 ---
 

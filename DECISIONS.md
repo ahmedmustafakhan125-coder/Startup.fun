@@ -102,3 +102,25 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
 5. **`wind_down` adds anything already in `refund_vault`** to the refund pool.
 6. **A claim that would pay zero is rejected with `NothingToClaim`** (second claim in a period,
    empty vault, nothing vested yet).
+
+## Phase 4
+
+1. **New program ID `9dCBaMA4rwxAhnAh9mKbmr27FTakFVZ2KdcbyjyZpm7j`.** The Phase 0 keypair did not
+   come along when the project moved machines, so a new one was generated and adopted with
+   `anchor keys sync` before the first deploy. Back up `target/deploy/obverse-keypair.json`.
+2. **TypeScript client: Codama + `@solana/kit`** (the Solana docs MCP points to
+   `@codama/nodes-from-anchor` and `@codama/renderers-js`). `cd sdk && npm run generate` writes
+   `sdk/src/generated/`, which is committed together with the IDL copy in `sdk/idl/`. The async
+   instruction builders derive every PDA from the startup address.
+3. **Scripts are TypeScript run with `tsx`**, in their own `scripts/package.json`, importing the
+   client by relative path. Still no root JS workspace.
+4. **Scripts confirm by polling and back off on HTTP 429.** The public devnet endpoint limits per
+   IP; no websocket subscriptions are used.
+5. **Script wallets live in `keypairs/`** (git-ignored): operator, founder, buyer, holder. The
+   admin and platform wallet are the deploy wallet unless `PLATFORM_WALLET` is set.
+6. **All seeded startups share the `founder` script wallet**, so the demo and later phases can
+   sign founder actions. One `buyer` wallet fills the raises.
+7. **Seed data is copied into `scripts/seed.ts`** (ticker, target, raised, budget, cap, state)
+   rather than imported from the app, whose seed module builds UI objects.
+8. **The on-chain IDL upload that `anchor deploy` attempts failed** (metadata program error) and
+   is not needed: clients use the committed IDL and generated code.

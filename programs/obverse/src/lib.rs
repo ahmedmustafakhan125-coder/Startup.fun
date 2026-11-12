@@ -11,7 +11,7 @@ use crate::state::Heartbeat;
 
 pub use instructions::*;
 
-declare_id!("3m3j9sLeNffS1cG6RVWwb5SLNXUvBp3wtoG3u6CZrjQx");
+declare_id!("9dCBaMA4rwxAhnAh9mKbmr27FTakFVZ2KdcbyjyZpm7j");
 
 /// Obverse program. Rules and formulas: ARCHITECTURE.md section 4.
 #[program]

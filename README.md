@@ -14,8 +14,8 @@ Devnet only. Demo funds only.
 | `programs/obverse/` | Anchor program |
 | `tests/` | Program tests (Rust, LiteSVM) |
 | `server/` | Node + TypeScript backend (Fastify, Prisma, SQLite) |
-| `sdk/` | Generated program client and shared types |
-| `scripts/` | Devnet deploy, init, seed and demo scripts (from Phase 4) |
+| `sdk/` | Generated program client (Codama, `npm run generate`) and shared types |
+| `scripts/` | Devnet init, seed and demo scripts (see `scripts/README.md`) |
 
 Docs: `ARCHITECTURE.md` (rules and formulas), `PHASES.md` (build order and progress),
 `INSTRUCTIONS.md` (setup), `DECISIONS.md` (choices and tool versions).
