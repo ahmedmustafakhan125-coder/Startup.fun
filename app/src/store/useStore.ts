@@ -18,7 +18,9 @@ import {
   quoteBuy,
   quoteSell,
 } from '../lib/curve'
+import { LIVE } from '../chain/client'
 import { dayMs, isoDay } from '../lib/format'
+import { liveActions, liveSeed } from './live'
 import type { Application, DayStat, Draft, Heartbeat, Holding, Result, Startup, Trade } from './types'
 
 // This store is the whole "backend" for now. Every action below maps to one
@@ -78,7 +80,7 @@ interface Wallet {
   usdc: number
 }
 
-interface Data {
+export interface Data {
   startups: Startup[]
   applications: Application[]
   trades: Trade[]
@@ -89,14 +91,17 @@ interface Data {
   draft: Draft
 }
 
-interface Actions {
+// Money actions return a promise in live mode, where they wait for the wallet and the network.
+type Async<T> = T | Promise<T>
+
+export interface Actions {
   connect: (kind: 'demo' | 'phantom', address?: string) => void
   disconnect: () => void
-  airdrop: () => void
-  commit: (id: string, usdc: number) => Result
-  buy: (id: string, usdc: number) => Result
-  sell: (id: string, tokens: number) => Result
-  claimRefund: (id: string) => Result
+  airdrop: () => Async<Result>
+  commit: (id: string, usdc: number) => Async<Result>
+  buy: (id: string, usdc: number) => Async<Result>
+  sell: (id: string, tokens: number) => Async<Result>
+  claimRefund: (id: string) => Async<Result>
   setDraft: (patch: Partial<Draft>) => void
   resetDraft: () => void
   submitApplication: () => Result
@@ -107,10 +112,12 @@ interface Actions {
   adminCloseRaise: (id: string) => Result
   adminSetHeartbeat: (id: string, hb: Heartbeat) => void
   adminAdvanceMonth: () => string[]
-  founderClaimTreasury: (id: string) => Result
-  founderClaimFees: (id: string) => Result
-  founderClaimTokens: (id: string) => Result
+  founderClaimTreasury: (id: string) => Async<Result>
+  founderClaimFees: (id: string) => Async<Result>
+  founderClaimTokens: (id: string) => Async<Result>
   resetDemo: () => void
+  /** Re-reads on-chain state. Does nothing in mock mode. */
+  refresh: () => Promise<void>
 }
 
 const seed = (): Data => {
@@ -206,11 +213,14 @@ export const useStore = create<Data & Actions>()(
       const needWallet = (): string | null => (get().wallet.address ? null : 'Connect a wallet first.')
 
       return {
-        ...seed(),
+        ...(LIVE ? liveSeed(seed()) : seed()),
 
         connect: (kind, address) => set(st => ({ wallet: { ...st.wallet, kind, address: address ?? DEMO_ADDRESS } })),
         disconnect: () => set(st => ({ wallet: { ...st.wallet, kind: null, address: null } })),
-        airdrop: () => set(st => ({ wallet: { ...st.wallet, usdc: st.wallet.usdc + DEMO_AIRDROP } })),
+        airdrop: () => {
+          set(st => ({ wallet: { ...st.wallet, usdc: st.wallet.usdc + DEMO_AIRDROP } }))
+          return { ok: true }
+        },
 
         commit: (id, usdc) => {
           const err = needWallet()
@@ -571,10 +581,13 @@ export const useStore = create<Data & Actions>()(
         },
 
         resetDemo: () => set({ ...seed() }),
+        refresh: async () => {},
+        ...(LIVE ? liveActions(set, get, addTrade) : {}),
       }
     },
     {
-      name: 'obverse-demo-v2',
+      // Live mode keeps its own saved state so it never mixes with the demo data.
+      name: LIVE ? 'obverse-live-v1' : 'obverse-demo-v2',
       storage: createJSONStorage(() => safeStorage),
       partialize: ({ startups, applications, trades, daily, month, wallet, holdings, draft }) => ({
         startups,
@@ -597,6 +610,8 @@ export interface Toast {
   body?: string
   tone: 'ok' | 'error' | 'info'
   coin?: string
+  /** Explorer link for a confirmed transaction (live mode). */
+  href?: string
 }
 interface Ui {
   toasts: Toast[]
@@ -612,7 +627,8 @@ export const useUi = create<Ui>(set => ({
   toast: t => {
     const id = toastId++
     set(s => ({ toasts: [...s.toasts.slice(-3), { ...t, id }] }))
-    setTimeout(() => set(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), 4600)
+    // A toast with a link stays longer, so there is time to open it.
+    setTimeout(() => set(s => ({ toasts: s.toasts.filter(x => x.id !== id) })), t.href ? 12_000 : 4600)
   },
   dismiss: id => set(s => ({ toasts: s.toasts.filter(x => x.id !== id) })),
   openConnect: open => set({ connectOpen: open }),

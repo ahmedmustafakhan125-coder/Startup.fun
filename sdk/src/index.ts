@@ -5,6 +5,7 @@ import { type Address, getProgramDerivedAddress } from '@solana/kit'
 import { OBVERSE_PROGRAM_ADDRESS } from './generated/index.ts'
 
 export * from './generated/index.ts'
+export * from './rpc.ts'
 
 /** The only cluster this project targets. */
 export const CLUSTER = 'devnet' as const

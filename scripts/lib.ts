@@ -14,8 +14,6 @@ import {
   type Address,
   appendTransactionMessageInstructions,
   createKeyPairSignerFromBytes,
-  createDefaultRpcTransport,
-  createSolanaRpcFromTransport,
   createTransactionMessage,
   getBase64EncodedWireTransaction,
   getSignatureFromTransaction,
@@ -28,6 +26,7 @@ import {
 } from '@solana/kit'
 
 import {
+  createRpc,
   fetchMaybeStartup,
   findConfigPda,
   findMintPda,
@@ -40,23 +39,8 @@ import {
 } from '../sdk/src/index.ts'
 
 export const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com'
-// Hard rule: devnet only.
-if (/mainnet/i.test(RPC_URL)) throw new Error('RPC_URL points at mainnet. Obverse runs on devnet only.')
-
 export const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-// The public devnet endpoint rate-limits per IP, so back off on 429 instead of failing.
-const transport = createDefaultRpcTransport({ url: RPC_URL })
-export const rpc = createSolanaRpcFromTransport((async (...args: Parameters<typeof transport>) => {
-  for (let attempt = 0; ; attempt++) {
-    try {
-      return await transport(...args)
-    } catch (error) {
-      if (attempt >= 6 || !String(error).includes('429')) throw error
-      await sleep(3_000 * (attempt + 1))
-    }
-  }
-}) as typeof transport)
+export const rpc = createRpc(RPC_URL)
 export const USDC = 1_000_000n
 export const TOKENS = 1_000_000n
 export const FAUCET_MAX = 5_000n * USDC

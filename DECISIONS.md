@@ -124,3 +124,33 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
    rather than imported from the app, whose seed module builds UI objects.
 8. **The on-chain IDL upload that `anchor deploy` attempts failed** (metadata program error) and
    is not needed: clients use the committed IDL and generated code.
+
+## Phase 5
+
+1. **Wallet connection: the Wallet Standard, through `@wallet-standard/app`.** The Solana docs MCP
+   shows Kit's own React example signing through Wallet Standard features. The store is not
+   hook-based, so the app talks to the standard directly: it finds the installed wallet that
+   holds the connected address and calls `solana:signTransaction`. The existing Phantom connect
+   button is unchanged. The demo wallet is offered in mock mode only.
+2. **The wallet signs, the app sends.** The signed transaction goes to the app's own devnet RPC
+   and is confirmed by polling. That gives the two button states ("Waiting for wallet",
+   "Confirming") and does not depend on which network the wallet extension is set to.
+3. **Live mode is a set of overrides in `app/src/store/live.ts`.** Mock actions are untouched;
+   money actions now may return a promise, and the pages await them. Live state is saved under
+   its own storage key.
+4. **1% slippage limit** on live buys and sells, taken from the quote on screen.
+5. **Still sample data in live mode:** startup profiles (matched by ticker; unknown tickers get a
+   blank profile), the application queue and the admin numbers. Backers, volume, price history
+   and total fees claimed read as zero or two points until the indexer exists (Phases 6 and 8).
+   The trade list shows only this browser's own trades.
+6. **Cost basis in live mode is local.** Tokens first seen are valued at the current price;
+   after that the browser keeps a running cost. The indexer replaces this in Phase 8.
+7. **Days of silence are scaled** from on-chain seconds: one on-chain month shows as 30 days.
+8. **"Advance one month" is hidden in live mode.** Admin shows the on-chain clock rule, and each
+   startup card on the Founder page shows its month and a countdown to the next reset.
+9. **The 429 backoff RPC client moved to `sdk/src/rpc.ts`** and is shared by the app and scripts.
+10. **Verified without Phantom.** Faucet, commit, buy, sell, treasury claim, fee claim and refund
+    were run on devnet through the live store in Node, with a stand-in Wallet Standard wallet
+    signing with a script key. A buy quoted 160,013.410303 tokens and received 160,013.410302.
+    Not yet run on devnet: the founder token claim (nothing unlocks before month 13) and the
+    real Phantom popup.

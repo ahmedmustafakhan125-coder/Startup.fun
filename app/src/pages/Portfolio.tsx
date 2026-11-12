@@ -1,3 +1,4 @@
+import { explorerTx, stageLabel, useTxStage } from '../chain/client'
 import { Link } from 'react-router-dom'
 import { Coin } from '../components/Coin'
 import { Change, coinTone } from '../components/StartupRow'
@@ -37,6 +38,7 @@ export default function Portfolio() {
     .map(r => ({ ...r, value: r.h.tokens * priceOf(r.s) }))
     .sort((a, b) => b.value - a.value)
   const invested = rows.reduce((a, r) => a + r.value, 0)
+  const stage = useTxStage(st => st.stage)
   const cost = rows.reduce((a, r) => a + r.h.cost, 0)
 
   return (
@@ -46,12 +48,13 @@ export default function Portfolio() {
         right={
           <button
             className="btn btn-glass"
-            onClick={() => {
-              airdrop()
-              toast({ tone: 'ok', title: `Added ${usd(DEMO_AIRDROP)} demo USDC` })
+            disabled={!!stage}
+            onClick={async () => {
+              const r = await airdrop()
+              toast(r.ok ? { tone: 'ok', title: `Added ${usd(DEMO_AIRDROP)} demo USDC`, href: r.signature && explorerTx(r.signature) } : { tone: 'error', title: 'No USDC was added', body: r.error })
             }}
           >
-            Get {usd(DEMO_AIRDROP)} demo USDC
+            {stage ? stageLabel(stage) : `Get ${usd(DEMO_AIRDROP)} demo USDC`}
           </button>
         }
       />
@@ -108,9 +111,14 @@ export default function Portfolio() {
                   {dead ? (
                     <button
                       className="btn btn-lime btn-sm"
-                      onClick={() => {
-                        const r = claimRefund(s.id)
-                        r.ok ? toast({ tone: 'ok', title: `Refunded ${usd(Number(r.message), 2)}`, body: `${compact(h.tokens)} ${s.ticker} redeemed`, coin: s.ticker }) : toast({ tone: 'error', title: 'Refund failed', body: r.error })
+                      disabled={!!stage}
+                      onClick={async () => {
+                        const r = await claimRefund(s.id)
+                        toast(
+                          r.ok
+                            ? { tone: 'ok', title: `Refunded ${usd(Number(r.message), 2)}`, body: `${compact(h.tokens)} ${s.ticker} redeemed`, coin: s.ticker, href: r.signature && explorerTx(r.signature) }
+                            : { tone: 'error', title: 'Refund failed', body: r.error },
+                        )
                       }}
                     >
                       Claim refund

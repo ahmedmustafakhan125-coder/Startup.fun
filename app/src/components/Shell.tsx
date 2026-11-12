@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { explorerTx, LIVE, stageLabel, useTxStage } from '../chain/client'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { BRAND, DEMO_AIRDROP, NETWORK } from '../config'
 import { shortAddr, usd } from '../lib/format'
@@ -44,6 +45,7 @@ export function ConnectModal() {
   const disconnect = useStore(s => s.disconnect)
   const airdrop = useStore(s => s.airdrop)
   const [busy, setBusy] = useState(false)
+  const stage = useTxStage(st => st.stage)
   const phantom = typeof window !== 'undefined' ? getPhantom() : null
   const close = () => openConnect(false)
 
@@ -53,7 +55,7 @@ export function ConnectModal() {
     try {
       const res = await phantom.connect()
       connect('phantom', res.publicKey.toString())
-      toast({ tone: 'ok', title: 'Phantom connected', body: 'Balances here are demo USDC until the devnet program is wired in.' })
+      toast({ tone: 'ok', title: 'Phantom connected', body: LIVE ? 'Balances are read from devnet.' : 'Balances here are demo USDC until the devnet program is wired in.' })
       close()
     } catch {
       toast({ tone: 'error', title: 'Phantom did not connect', body: 'The request was rejected or the wallet is locked.' })
@@ -74,12 +76,13 @@ export function ConnectModal() {
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             className="btn btn-lime"
-            onClick={() => {
-              airdrop()
-              toast({ tone: 'ok', title: `Added ${usd(DEMO_AIRDROP)} demo USDC` })
+            disabled={!!stage}
+            onClick={async () => {
+              const r = await airdrop()
+              toast(r.ok ? { tone: 'ok', title: `Added ${usd(DEMO_AIRDROP)} demo USDC`, href: r.signature && explorerTx(r.signature) } : { tone: 'error', title: 'No USDC was added', body: r.error })
             }}
           >
-            Get {usd(DEMO_AIRDROP)}
+            {stage ? stageLabel(stage) : `Get ${usd(DEMO_AIRDROP)}`}
           </button>
           <button
             className="btn btn-glass"
@@ -98,20 +101,23 @@ export function ConnectModal() {
     <Modal open={connectOpen} onClose={close} title="Connect a wallet">
       <p className="mb-5 text-ink2">Everything runs on {NETWORK.toLowerCase()} with demo USDC. No real money moves.</p>
       <div className="grid gap-3">
-        <button
-          className="glass-flat flex items-center gap-4 p-4 text-left transition hover:bg-white/[.07]"
-          onClick={() => {
-            connect('demo')
-            toast({ tone: 'ok', title: 'Demo wallet connected', body: 'It holds demo USDC, three positions and one listed startup.' })
-            close()
-          }}
-        >
-          <Coin label="D" size={44} />
-          <span>
-            <span className="block font-semibold">Demo wallet</span>
-            <span className="block text-sm text-ink2">Pre-loaded, works in any browser</span>
-          </span>
-        </button>
+        {/* The demo wallet cannot sign real transactions, so live mode only offers real wallets. */}
+        {!LIVE && (
+          <button
+            className="glass-flat flex items-center gap-4 p-4 text-left transition hover:bg-white/[.07]"
+            onClick={() => {
+              connect('demo')
+              toast({ tone: 'ok', title: 'Demo wallet connected', body: 'It holds demo USDC, three positions and one listed startup.' })
+              close()
+            }}
+          >
+            <Coin label="D" size={44} />
+            <span>
+              <span className="block font-semibold">Demo wallet</span>
+              <span className="block text-sm text-ink2">Pre-loaded, works in any browser</span>
+            </span>
+          </button>
+        )}
         <button className="glass-flat flex items-center gap-4 p-4 text-left transition enabled:hover:bg-white/[.07] disabled:opacity-50" disabled={!phantom || busy} onClick={usePhantom}>
           <span className="grid h-11 w-11 place-items-center rounded-full bg-white/10">
             <Icon name="wallet" size={22} />
@@ -182,6 +188,18 @@ export function Toasts() {
           <span className="min-w-0">
             <span className="block font-semibold leading-snug">{t.title}</span>
             {t.body && <span className="block text-sm leading-snug text-ink2">{t.body}</span>}
+            {t.href && (
+              <span
+                role="link"
+                className="block text-sm leading-snug text-ink2 underline"
+                onClick={e => {
+                  e.stopPropagation()
+                  window.open(t.href, '_blank', 'noopener')
+                }}
+              >
+                View on Solana Explorer
+              </span>
+            )}
           </span>
         </button>
       ))}

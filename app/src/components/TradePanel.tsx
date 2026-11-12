@@ -1,9 +1,10 @@
 import { useId, useState } from 'react'
+import { explorerTx, LIVE, stageLabel, useTxStage } from '../chain/client'
 import { FEE } from '../config'
 import { feeParts, priceOf, quoteBuy, quoteSell } from '../lib/curve'
 import { compact, num, pctPlain, price, usd } from '../lib/format'
 import { useStore, useUi } from '../store/useStore'
-import type { Startup } from '../store/types'
+import type { Result, Startup } from '../store/types'
 import { Coin } from './Coin'
 import { Icon, Progress, cx } from './ui'
 
@@ -25,21 +26,22 @@ export function TradePanel({ s }: { s: Startup }) {
   const [raw, setRaw] = useState('')
   const [showFees, setShowFees] = useState(false)
   const [busy, setBusy] = useState(false)
+  const stage = useTxStage(st => st.stage)
+  const busyLabel = LIVE ? stageLabel(stage) : 'Confirming'
   const amount = Math.max(0, parseFloat(raw) || 0)
   const connected = !!wallet.address
 
-  const run = (fn: () => ReturnType<typeof buy>, okTitle: string, okBody?: string) => {
+  const run = async (fn: () => Result | Promise<Result>, okTitle: string, okBody?: string) => {
     if (!connected) return openConnect(true)
     setBusy(true)
-    // A short pause stands in for the transaction confirming.
-    setTimeout(() => {
-      const r = fn()
-      setBusy(false)
-      if (r.ok) {
-        toast({ tone: 'ok', title: okTitle, body: r.message && isNaN(Number(r.message)) ? r.message : okBody, coin: s.ticker })
-        setRaw('')
-      } else toast({ tone: 'error', title: 'That did not go through', body: r.error })
-    }, 650)
+    // In mock mode a short pause stands in for the transaction confirming.
+    if (!LIVE) await new Promise(resolve => setTimeout(resolve, 650))
+    const r = await fn()
+    setBusy(false)
+    if (r.ok) {
+      toast({ tone: 'ok', title: okTitle, body: r.message && isNaN(Number(r.message)) ? r.message : okBody, coin: s.ticker, href: r.signature && explorerTx(r.signature) })
+      setRaw('')
+    } else toast({ tone: 'error', title: 'That did not go through', body: r.error })
   }
 
   if (s.phase === 'wound_down') {
@@ -58,7 +60,7 @@ export function TradePanel({ s }: { s: Startup }) {
           disabled={busy || (connected && held <= 0)}
           onClick={() => run(() => claimRefund(s.id), `Refunded ${usd(due, 2)}`, `${compact(held)} ${s.ticker} redeemed`)}
         >
-          {!connected ? 'Connect wallet' : busy ? 'Confirming' : held > 0 ? `Claim ${usd(due, 2)}` : 'Nothing to claim'}
+          {!connected ? 'Connect wallet' : busy ? busyLabel : held > 0 ? `Claim ${usd(due, 2)}` : 'Nothing to claim'}
         </button>
       </div>
     )
@@ -88,7 +90,7 @@ export function TradePanel({ s }: { s: Startup }) {
           <Line k="Goes to the treasury" v="80% after a 2.5% listing fee" />
         </div>
         <button className="btn btn-lime mt-5 w-full" disabled={busy || (connected && pay <= 0)} onClick={() => run(() => commit(s.id, pay), `Committed ${usd(pay, 2)}`, `${compact(tokens)} ${s.ticker} reserved for you`)}>
-          {!connected ? 'Connect wallet' : busy ? 'Confirming' : pay > 0 ? `Commit ${usd(pay, 2)}` : 'Enter an amount'}
+          {!connected ? 'Connect wallet' : busy ? busyLabel : pay > 0 ? `Commit ${usd(pay, 2)}` : 'Enter an amount'}
         </button>
       </div>
     )
@@ -102,7 +104,7 @@ export function TradePanel({ s }: { s: Startup }) {
   const impact = isBuy ? qb.impact : qs.impact
   const receive = isBuy ? `${compact(qb.tokensOut)} ${s.ticker}` : usd(qs.usdcOut, 2)
   const tooMuch = isBuy ? amount > wallet.usdc : amount > held + 1e-6
-  const label = !connected ? 'Connect wallet' : busy ? 'Confirming' : amount <= 0 ? 'Enter an amount' : tooMuch ? (isBuy ? 'Not enough USDC' : `Not enough ${s.ticker}`) : isBuy ? `Buy ${s.ticker}` : `Sell ${s.ticker}`
+  const label = !connected ? 'Connect wallet' : busy ? busyLabel : amount <= 0 ? 'Enter an amount' : tooMuch ? (isBuy ? 'Not enough USDC' : `Not enough ${s.ticker}`) : isBuy ? `Buy ${s.ticker}` : `Sell ${s.ticker}`
 
   return (
     <div className="glass p-5 sm:p-6">

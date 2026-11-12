@@ -13,6 +13,9 @@
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.1.0",
     "@fontsource-variable/hanken-grotesk": "^5.1.0",
+    "@solana-program/token": "^0.18.0",
+    "@solana/kit": "^8.6.0",
+    "@wallet-standard/app": "^1.1.1",
     "d3-geo": "^3.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

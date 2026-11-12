@@ -61,6 +61,9 @@ export interface Startup {
   refundPool: number
   refundPerToken: number
   woundDownAt?: number
+  // live mode only: when trading opened (ms) and how long one on-chain "month" lasts (seconds)
+  liveAt?: number
+  periodSeconds?: number
 }
 
 export type AppStatus = 'submitted' | 'in_review' | 'scheduled' | 'rejected' | 'listed'
@@ -137,4 +140,5 @@ export interface Draft {
   code: string
 }
 
-export type Result = { ok: true; message?: string } | { ok: false; error: string }
+// `signature` is set in live mode, for the explorer link.
+export type Result = { ok: true; message?: string; signature?: string } | { ok: false; error: string }

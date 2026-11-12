@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { LIVE } from '../chain/client'
 import { Link, useNavigate } from 'react-router-dom'
 import { AreaChart, BarChart, SplitBar } from '../components/Charts'
 import { CheckDots, Checklist } from '../components/Checklist'
@@ -201,12 +202,21 @@ export default function Admin() {
           </p>
         </div>
         <div className="glass-flat flex items-center gap-4 py-2 pl-5 pr-2" style={{ borderRadius: 999 }}>
-          <span className="text-[15px]">
-            Demo clock: <strong>month {month}</strong>
-          </span>
-          <button className="btn btn-lime btn-sm" onClick={advance}>
-            Advance one month
-          </button>
+          {LIVE ? (
+            // On devnet the clock runs on-chain; each startup's Founder page shows its month and countdown.
+            <span className="py-1.5 pr-3 text-[15px]">
+              On-chain clock: <strong>one month is five minutes</strong>
+            </span>
+          ) : (
+            <>
+              <span className="text-[15px]">
+                Demo clock: <strong>month {month}</strong>
+              </span>
+              <button className="btn btn-lime btn-sm" onClick={advance}>
+                Advance one month
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="glass overflow-hidden">

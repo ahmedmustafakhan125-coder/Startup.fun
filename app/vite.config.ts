@@ -7,6 +7,10 @@ import { viteSingleFile } from 'vite-plugin-singlefile'
 // `npm run build:preview` -> one self-contained index.html in dist-preview/ (used for the shareable preview)
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss(), ...(mode === 'preview' ? [viteSingleFile()] : [])],
+  // The generated program client lives in ../sdk and is imported as source.
+  resolve: { dedupe: ['@solana/kit'] },
+  server: { fs: { allow: ['..'] } },
+  define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
   build: {
     outDir: mode === 'preview' ? 'dist-preview' : 'dist',
     assetsInlineLimit: mode === 'preview' ? 100000000 : 4096,

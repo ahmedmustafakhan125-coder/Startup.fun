@@ -137,21 +137,24 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 
 **Goal:** with `VITE_DATA_SOURCE=live`, a real devnet wallet can use every money action.
 
-- [ ] Real wallet connection (library chosen with the `solana` MCP). Keep the demo wallet in mock mode.
-- [ ] `app/src/chain/`: client setup, account readers (startup state, vault balances, token balances),
+- [x] Real wallet connection (library chosen with the `solana` MCP). Keep the demo wallet in mock mode.
+- [x] `app/src/chain/`: client setup, account readers (startup state, vault balances, token balances),
       transaction builders for faucet, commit, buy, sell, the three founder claims and refund.
-- [ ] Switch the store actions to the chain in live mode (see the table in `ARCHITECTURE.md` section 6).
-- [ ] Button states: waiting for wallet, confirming, confirmed with explorer link, failed with reason.
-- [ ] Map program errors to the plain messages the UI already uses.
-- [ ] Replace "Advance one month" with the current period and a countdown in live mode.
-- [ ] Until Phase 6 and 8 exist, startup profiles may come from a static file and charts from on-chain reads.
+- [x] Switch the store actions to the chain in live mode (see the table in `ARCHITECTURE.md` section 6).
+- [x] Button states: waiting for wallet, confirming, confirmed with explorer link, failed with reason.
+- [x] Map program errors to the plain messages the UI already uses.
+- [x] Replace "Advance one month" with the current period and a countdown in live mode.
+- [x] Until Phase 6 and 8 exist, startup profiles may come from a static file and charts from on-chain reads.
 
 **Done when**
 
+> Open: the first box needs a person with Phantom in a browser. Every action in it was run on
+> devnet through the live store with a stand-in Wallet Standard wallet (see `DECISIONS.md`).
+
 - [ ] In live mode with Phantom on devnet: faucet, commit, buy, sell, claim treasury, claim fees and
       claim refund each succeed and the screen updates from on-chain state.
-- [ ] Quotes shown before a trade match what the wallet receives.
-- [ ] Mock mode still works unchanged, and `npm run build` passes.
+- [x] Quotes shown before a trade match what the wallet receives.
+- [x] Mock mode still works unchanged, and `npm run build` passes.
 
 ---
 

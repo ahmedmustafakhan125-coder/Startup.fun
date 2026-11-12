@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { explorerTx, LIVE, stageLabel, useTxStage } from '../chain/client'
 import { Beats, Checklist } from '../components/Checklist'
 import { Coin } from '../components/Coin'
 import { coinTone } from '../components/StartupRow'
@@ -47,7 +49,38 @@ function Timeline({ a }: { a: Application }) {
   )
 }
 
-function ClaimTile({ icon, title, amount, note, action, disabled, onClaim }: { icon: string; title: string; amount: string; note: string; action: string; disabled: boolean; onClaim: () => void }) {
+/** Live mode: which on-chain period the startup is in and when budgets reset. Replaces the demo clock. */
+function PeriodClock({ s }: { s: Startup }) {
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+  if (!s.liveAt || !s.periodSeconds) return null
+  const elapsed = Math.max(0, (now - s.liveAt) / 1000)
+  const left = Math.ceil(s.periodSeconds - (elapsed % s.periodSeconds))
+  return (
+    <p className="mb-0 mt-5 text-[15px] text-ink2">
+      Month {Math.floor(elapsed / s.periodSeconds) + 1} on devnet. Budget and fee cap reset in{' '}
+      <strong className="text-ink">
+        {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+      </strong>
+      .
+    </p>
+  )
+}
+
+function ClaimTile({ icon, title, amount, note, action, disabled, onClaim }: { icon: string; title: string; amount: string; note: string; action: string; disabled: boolean; onClaim: () => void | Promise<void> }) {
+  const [busy, setBusy] = useState(false)
+  const stage = useTxStage(st => st.stage)
+  const claim = async () => {
+    setBusy(true)
+    try {
+      await onClaim()
+    } finally {
+      setBusy(false)
+    }
+  }
   return (
     <div className="glass-flat flex flex-col p-5">
       <div className="flex items-center gap-2.5 text-ink2">
@@ -56,8 +89,8 @@ function ClaimTile({ icon, title, amount, note, action, disabled, onClaim }: { i
       </div>
       <div className="mt-3 font-display text-[30px] font-semibold leading-none">{amount}</div>
       <p className="mb-4 mt-2.5 flex-1 text-[15px] text-ink2">{note}</p>
-      <button className="btn btn-lime btn-sm" disabled={disabled} onClick={onClaim}>
-        {action}
+      <button className="btn btn-lime btn-sm" disabled={disabled || busy || !!stage} onClick={claim}>
+        {busy && LIVE ? stageLabel(stage) : action}
       </button>
     </div>
   )
@@ -72,8 +105,11 @@ function MyStartup({ s }: { s: Startup }) {
   const f = claimableFees(s)
   const tok = founderClaimable(s)
   const toCliff = Math.max(0, CLIFF_MONTHS - s.vestMonths)
-  const act = (r: Result, title: (m: string) => string) =>
-    r.ok ? toast({ tone: 'ok', title: title(r.message ?? ''), coin: s.ticker }) : toast({ tone: 'error', title: 'Nothing was claimed', body: r.error })
+  const act = async (pending: Result | Promise<Result>, title: (m: string) => string) => {
+    const r = await pending
+    if (r.ok) toast({ tone: 'ok', title: title(r.message ?? ''), coin: s.ticker, href: r.signature && explorerTx(r.signature) })
+    else toast({ tone: 'error', title: 'Nothing was claimed', body: r.error })
+  }
 
   return (
     <Panel>
@@ -118,6 +154,7 @@ function MyStartup({ s }: { s: Startup }) {
               </p>
             </div>
           )}
+          <PeriodClock s={s} />
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             <ClaimTile
               icon="vault"
