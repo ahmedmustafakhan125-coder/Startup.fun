@@ -39,7 +39,7 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 **Done when**
 
 - [x] `cd app && npm run build` passes and the app looks the same as before in mock mode.
-- [ ] `anchor build` passes on the empty program and `anchor test` runs.
+- [x] `anchor build` passes on the empty program and `anchor test` runs.
 - [x] `cd server && npm run dev` serves `GET /health`.
 - [x] The summary quotes one answer obtained from each MCP server.
 
@@ -49,24 +49,24 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 
 **Goal:** an operator can list a startup and buyers can fill its raise.
 
-- [ ] `Config` account and `initialize_config`, `update_config`.
-- [ ] Demo USDC mint and `faucet` (capped per call, behind a config flag).
-- [ ] `pay_verification_fee` with its event.
-- [ ] `Startup` account, vault authority PDA and all token accounts.
-- [ ] `create_startup`: mint 100M, split 65M / 13M / 20M / 2M, remove mint authority.
-- [ ] `commit` at the fixed price, clamped to the remaining room.
-- [ ] Raise close (automatic at target, and `close_raise`): listing fee, 80/20 split, pool seeding,
+- [x] `Config` account and `initialize_config`, `update_config`.
+- [x] Demo USDC mint and `faucet` (capped per call, behind a config flag).
+- [x] `pay_verification_fee` with its event.
+- [x] `Startup` account, vault authority PDA and all token accounts.
+- [x] `create_startup`: mint 100M, split 65M / 13M / 20M / 2M, remove mint authority.
+- [x] `commit` at the fixed price, clamped to the remaining room.
+- [x] Raise close (automatic at target, and `close_raise`): listing fee, 80/20 split, pool seeding,
       burning unsold and unused tokens.
-- [ ] Events: `ApplicationFeePaid`, `StartupListed`, `Committed`, `RaiseClosed`.
+- [x] Events: `ApplicationFeePaid`, `StartupListed`, `Committed`, `RaiseClosed`.
 
 **Done when**
 
-- [ ] Tests pass for: config init and update permissions; faucet cap; listing by a non-operator is
+- [x] Tests pass for: config init and update permissions; faucet cap; listing by a non-operator is
       rejected; commit before, at and beyond the target; automatic close at target; early close;
       close with nothing committed is rejected.
-- [ ] After a full raise of 100,000 USDC the test asserts: platform received 2,500; treasury holds
+- [x] After a full raise of 100,000 USDC the test asserts: platform received 2,500; treasury holds
       78,000; pool holds 19,500 USDC and 12,675,000 tokens; total supply fell by the burned amount.
-- [ ] Commit after close is rejected with a named error.
+- [x] Commit after close is rejected with a named error.
 
 ---
 

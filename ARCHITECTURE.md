@@ -102,6 +102,7 @@ migrate accounts.
 | `faucet(amount)` | anyone | mints up to 5,000 demo USDC per call to the caller (devnet only, behind a config flag) |
 | `pay_verification_fee(application_id)` | founder | transfers 300 USDC to `platform_wallet`, emits an event the backend matches to the application |
 | `create_startup(args)` | operator | creates `Startup`, mints 100M tokens into `sale_vault` (65M), a liquidity holding account (13M), `founder_lock` (20M), `platform_lock` (2M), then removes mint authority. Phase = Raising |
+| `create_startup_vaults` | operator | creates the startup's six USDC vaults. Sent in the same transaction as `create_startup` (one instruction cannot create all twelve accounts within the stack limit) |
 | `commit(usdc_in)` | buyer | Raising only. Takes USDC into `raise_vault`, sends tokens at the fixed price. Closes the raise automatically when the target is reached |
 | `close_raise` | operator | closes a raise early if anything was committed |
 | `buy(usdc_in, min_tokens_out)` | trader | Live only. Constant-product swap with the 1% fee |

@@ -38,3 +38,35 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
 7. **The program keypair stays in `target/deploy/` (git-ignored).** Only the public program ID is
    committed. Back the file up before Phase 4: the devnet address depends on it.
 8. **Server default port is 8787**, bound to 127.0.0.1.
+
+## Phase 1
+
+1. **`create_startup` is two instructions.** Creating the startup, its mint and all ten token
+   accounts in one instruction overflows the 4 KB SBF stack (the build reports it). `create_startup`
+   creates the `Startup`, the mint and the four token-side accounts and mints the supply;
+   `create_startup_vaults` creates the six USDC vaults. The operator sends both in one transaction,
+   with a compute budget of 400,000 units. `commit` fails until the vaults exist.
+2. **The 13M liquidity allocation waits in `pool_token`.** No separate holding account: the raise
+   close burns what the pool does not need and leaves the rest in place.
+3. **Callers pass token accounts that already exist.** `faucet`, `commit` and
+   `pay_verification_fee` do not create accounts; clients put an idempotent
+   associated-token-account instruction in front. Keeps `init_if_needed` out of the program.
+4. **Account sizes.** `Config` is 437 bytes and `Startup` is 496 bytes, each including 256 zeroed
+   `_reserved` bytes. The ticker has room for 16 bytes; the program accepts 3 to 5 capital
+   letters, the same rule as the listing wizard. `Startup` already carries the Phase 2 and 3 fields.
+5. **`commit` clamps to the remaining room** (ARCHITECTURE.md section 10 default). An amount too
+   small to buy one base unit of token is rejected with `CommitTooSmall`.
+6. **Fixed rules are not updatable.** `update_config` can change admin, operator, platform wallet,
+   time units, verification fee, pause and the faucet flag. Fee split, listing fee, treasury share
+   and lock lengths are set once at `initialize_config`.
+7. **`initialize_config` makes its caller the admin.** Acceptable on devnet because the Phase 4
+   deploy script calls it straight after deploying. Gate it on the program's upgrade authority
+   before any deployment that holds real value (marked `shortcut:` in the code).
+8. **No token metadata yet.** Skipped as section 10 allows; revisit in Phase 4 with the client.
+9. **`anchor-spl` is pinned to `=1.1.2`.** Cargo otherwise picks 1.2.2, which does not compile
+   against `anchor-lang` 1.1.2.
+10. **Extra events `ConfigUpdated` and `FaucetUsed`**, so every state-changing instruction emits one.
+11. **Tests set the LiteSVM clock** to a fixed real-looking time; it starts at unix time 0.
+12. **The Solana docs MCP was queried over HTTP** (the same `mcp.solana.com` endpoint) because the
+    server was not attached to the session. Its answer: in Anchor 1.x `CpiContext::new` takes the
+    program id, not the program `AccountInfo`.

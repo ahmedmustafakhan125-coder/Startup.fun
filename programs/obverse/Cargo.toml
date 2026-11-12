@@ -14,7 +14,7 @@ default = []
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-log-ix-name = []
-idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-debug = []
 custom-heap = []
 custom-panic = []
@@ -22,6 +22,7 @@ custom-panic = []
 
 [dependencies]
 anchor-lang = "1.1.2"
+anchor-spl = "=1.1.2"
 
 [dev-dependencies]
 litesvm = "0.10.0"
@@ -33,8 +34,8 @@ solana-keypair = "3.0.1"
 # Program tests live in the repo-level tests/ folder (see CLAUDE.md layout).
 # Each test file needs its own [[test]] entry here.
 [[test]]
-name = "smoke"
-path = "../../tests/smoke.rs"
+name = "phase1"
+path = "../../tests/phase1.rs"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
