@@ -70,3 +70,35 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
 12. **The Solana docs MCP was queried over HTTP** (the same `mcp.solana.com` endpoint) because the
     server was not attached to the session. Its answer: in Anchor 1.x `CpiContext::new` takes the
     program id, not the program `AccountInfo`.
+
+## Phase 2
+
+1. **Rounding in trades.** The buy fee is `usdc_in * 1%` rounded down, so the pool receives at
+   least the exact net amount. `tokens_out` (buy) and `usdc_out` (sell) are priced on the exact,
+   unrounded 1% and rounded down; on a sell the fee is `gross - usdc_out`. Result: what the trader
+   receives is within one base unit of `curve.ts` for every input and never above it, the fee is
+   within one base unit, and the pool's `usdc * tokens` never falls. A naive "round the fee, then
+   price" would drift by hundreds of token base units on amounts that are not a multiple of 100
+   base units of USDC.
+2. **Parity test ports `quoteBuy` and `quoteSell` to Rust** (f64, line for line) in
+   `tests/phase2.rs`, with 0.05 base units of slack for f64 noise.
+3. **Pool reserves are the token account balances** of `pool_usdc` and `pool_token`. Tokens sent
+   straight to those accounts act as a donation to the pool.
+4. **`Traded.price_after` is USDC per token scaled by 1e12.** The event also carries both pool
+   reserves after the trade, which is what the indexer should chart from.
+5. **Selling is not blocked by `paused`.** The rule says pause blocks commit, buy and claims;
+   holders can always exit.
+6. **Named errors for balance and dust:** `InsufficientBalance` and `TradeTooSmall`.
+7. **`buy` and `sell` share one accounts struct (`Trade`)**; `claim_treasury` and `claim_fees`
+   share `FounderClaim`.
+
+## Phase 3
+
+1. **Platform token claims need Green too**, the same as founder claims ("same schedule").
+2. **A repeated Red report keeps the original `red_since`.**
+3. **`wind_down` is not blocked by `paused`**, and neither is `claim_refund`.
+4. **Refunds round down per claim**, so the refund vault can always pay the last holder; a few
+   base units of dust can stay behind.
+5. **`wind_down` adds anything already in `refund_vault`** to the refund pool.
+6. **A claim that would pay zero is rejected with `NothingToClaim`** (second claim in a period,
+   empty vault, nothing vested yet).

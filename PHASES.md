@@ -74,18 +74,18 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 
 **Goal:** the token trades with the exact maths the frontend shows.
 
-- [ ] `buy` and `sell` with slippage limits.
-- [ ] Fee split to platform wallet, fee vault, holder reserve and infra vault; rounding remainder to the reserve.
-- [ ] `Traded` event with side, amounts, price after, and the four fee parts.
-- [ ] Parity test: port or import `quoteBuy` and `quoteSell` from `app/src/lib/curve.ts` and compare
+- [x] `buy` and `sell` with slippage limits.
+- [x] Fee split to platform wallet, fee vault, holder reserve and infra vault; rounding remainder to the reserve.
+- [x] `Traded` event with side, amounts, price after, and the four fee parts.
+- [x] Parity test: port or import `quoteBuy` and `quoteSell` from `app/src/lib/curve.ts` and compare
       with program results across a table of inputs (tiny, typical, large, repeated trades).
 
 **Done when**
 
-- [ ] Parity test passes within one base unit on every case, and any difference favours the pool.
-- [ ] Tests pass for: trade while Raising is rejected; slippage limit rejects; selling more than held
+- [x] Parity test passes within one base unit on every case, and any difference favours the pool.
+- [x] Tests pass for: trade while Raising is rejected; slippage limit rejects; selling more than held
       is rejected; fee parts add up to the fee exactly; vault balances match the events.
-- [ ] A round trip (buy then sell everything) leaves the trader down by roughly the two fees and never up.
+- [x] A round trip (buy then sell everything) leaves the trader down by roughly the two fees and never up.
 
 ---
 
@@ -93,23 +93,23 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 
 **Goal:** money flows only while the heartbeat is green, and holders are refunded after 60 silent days.
 
-- [ ] `report_heartbeat` with `red_since` and `red_seconds_total` bookkeeping.
-- [ ] `claim_treasury` and `claim_fees` with per-period caps.
-- [ ] `claim_founder_tokens` and `claim_platform_tokens` with the 12 + 24 month schedule, counting green time only.
-- [ ] `wind_down` (callable by anyone when the conditions hold) and `claim_refund`.
-- [ ] Events for each.
-- [ ] Lifecycle test using short `month_seconds` and `winddown_seconds`.
+- [x] `report_heartbeat` with `red_since` and `red_seconds_total` bookkeeping.
+- [x] `claim_treasury` and `claim_fees` with per-period caps.
+- [x] `claim_founder_tokens` and `claim_platform_tokens` with the 12 + 24 month schedule, counting green time only.
+- [x] `wind_down` (callable by anyone when the conditions hold) and `claim_refund`.
+- [x] Events for each.
+- [x] Lifecycle test using short `month_seconds` and `winddown_seconds`.
 
 **Done when**
 
-- [ ] Tests pass for: claims by a non-founder are rejected; a second treasury claim in the same period
+- [x] Tests pass for: claims by a non-founder are rejected; a second treasury claim in the same period
       is rejected and works again next period; fee claim stops at the cap; all claims are rejected while
       Red; vesting is zero before the lock ends, steps monthly after it, and does not advance while Red.
-- [ ] Wind-down is rejected while Green and before the full silent time has passed, then succeeds.
-- [ ] After wind-down: trading and claims are rejected; founder, platform and pool tokens are burned;
+- [x] Wind-down is rejected while Green and before the full silent time has passed, then succeeds.
+- [x] After wind-down: trading and claims are rejected; founder, platform and pool tokens are burned;
       two holders with different balances each receive `amount * refund_pool / circulating`; the
       refund vault ends at zero or dust once everyone has claimed.
-- [ ] `paused` blocks commit, buy and claims but not `claim_refund`.
+- [x] `paused` blocks commit, buy and claims but not `claim_refund`.
 
 ---
 

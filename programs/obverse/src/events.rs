@@ -52,3 +52,72 @@ pub struct RaiseClosed {
     pub burned: u64,
     pub live_at: i64,
 }
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Side {
+    Buy,
+    Sell,
+}
+
+/// `usdc_amount` is what the trader paid (buy) or received (sell); the fee is on top of a sell's
+/// payout and inside a buy's payment. `price_after` is USDC per token scaled by 1e12.
+#[event]
+pub struct Traded {
+    pub startup: Pubkey,
+    pub trader: Pubkey,
+    pub side: Side,
+    pub usdc_amount: u64,
+    pub token_amount: u64,
+    pub fee: u64,
+    pub fee_platform: u64,
+    pub fee_startup: u64,
+    pub fee_reserve: u64,
+    pub fee_infra: u64,
+    pub pool_usdc_after: u64,
+    pub pool_tokens_after: u64,
+    pub price_after: u64,
+}
+
+#[event]
+pub struct HeartbeatReported {
+    pub startup: Pubkey,
+    pub green: bool,
+    pub at: i64,
+}
+
+#[event]
+pub struct TreasuryClaimed {
+    pub startup: Pubkey,
+    pub amount: u64,
+    pub period: u64,
+}
+
+#[event]
+pub struct FeesClaimed {
+    pub startup: Pubkey,
+    pub amount: u64,
+    pub period: u64,
+}
+
+#[event]
+pub struct TokensClaimed {
+    pub startup: Pubkey,
+    pub recipient: Pubkey,
+    pub amount: u64,
+    pub platform: bool,
+}
+
+#[event]
+pub struct WoundDown {
+    pub startup: Pubkey,
+    pub refund_pool: u64,
+    pub circulating: u64,
+}
+
+#[event]
+pub struct Refunded {
+    pub startup: Pubkey,
+    pub holder: Pubkey,
+    pub tokens_burned: u64,
+    pub usdc_paid: u64,
+}

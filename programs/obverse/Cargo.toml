@@ -26,6 +26,7 @@ anchor-spl = "=1.1.2"
 
 [dev-dependencies]
 litesvm = "0.10.0"
+base64 = "0.22"
 solana-message = "3.0.1"
 solana-transaction = "3.0.2"
 solana-signer = "3.0.0"
@@ -36,6 +37,14 @@ solana-keypair = "3.0.1"
 [[test]]
 name = "phase1"
 path = "../../tests/phase1.rs"
+
+[[test]]
+name = "phase2"
+path = "../../tests/phase2.rs"
+
+[[test]]
+name = "phase3"
+path = "../../tests/phase3.rs"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

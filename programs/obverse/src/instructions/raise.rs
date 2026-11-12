@@ -1,11 +1,12 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Burn, Mint, Token, TokenAccount, TransferChecked};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 
 use crate::{
     constants::*,
     error::ObverseError,
     events::{Committed, RaiseClosed},
     state::{mul_div, Config, Heartbeat, Phase, Startup},
+    vault::Vault,
 };
 
 #[derive(Accounts)]
@@ -168,7 +169,10 @@ struct RaiseAccounts<'a, 'info> {
 }
 
 impl<'info> RaiseAccounts<'_, 'info> {
-    /// Vault-signed transfer out of one of the startup's token accounts.
+    fn vault(&self, startup: &Account<'info, Startup>) -> Vault<'info> {
+        Vault::new(startup, &self.vault_authority, self.token_program)
+    }
+
     fn transfer(
         &self,
         startup: &Account<'info, Startup>,
@@ -177,21 +181,7 @@ impl<'info> RaiseAccounts<'_, 'info> {
         to: &AccountInfo<'info>,
         amount: u64,
     ) -> Result<()> {
-        let key = startup.key();
-        token::transfer_checked(
-            CpiContext::new_with_signer(
-                self.token_program,
-                TransferChecked {
-                    from: from.clone(),
-                    mint: mint.clone(),
-                    to: to.clone(),
-                    authority: self.vault_authority.clone(),
-                },
-                &[&[VAULT_SEED, key.as_ref(), &[startup.vault_bump]]],
-            ),
-            amount,
-            DECIMALS,
-        )
+        self.vault(startup).transfer(from, mint, to, amount)
     }
 
     fn burn(
@@ -200,19 +190,7 @@ impl<'info> RaiseAccounts<'_, 'info> {
         from: &AccountInfo<'info>,
         amount: u64,
     ) -> Result<()> {
-        let key = startup.key();
-        token::burn(
-            CpiContext::new_with_signer(
-                self.token_program,
-                Burn {
-                    mint: self.mint.clone(),
-                    from: from.clone(),
-                    authority: self.vault_authority.clone(),
-                },
-                &[&[VAULT_SEED, key.as_ref(), &[startup.vault_bump]]],
-            ),
-            amount,
-        )
+        self.vault(startup).burn(from, &self.mint, amount)
     }
 
     /// ARCHITECTURE.md 4.3 "Closing a raise". Everything paid out rounds down; the treasury keeps the rest.

@@ -3,8 +3,11 @@ pub mod error;
 pub mod events;
 pub mod instructions;
 pub mod state;
+pub mod vault;
 
 use anchor_lang::prelude::*;
+
+use crate::state::Heartbeat;
 
 pub use instructions::*;
 
@@ -51,5 +54,41 @@ pub mod obverse {
 
     pub fn close_raise(ctx: Context<CloseRaise>) -> Result<()> {
         crate::instructions::raise::handle_close_raise(ctx)
+    }
+
+    pub fn buy(ctx: Context<Trade>, usdc_in: u64, min_tokens_out: u64) -> Result<()> {
+        crate::instructions::trade::handle_buy(ctx, usdc_in, min_tokens_out)
+    }
+
+    pub fn sell(ctx: Context<Trade>, tokens_in: u64, min_usdc_out: u64) -> Result<()> {
+        crate::instructions::trade::handle_sell(ctx, tokens_in, min_usdc_out)
+    }
+
+    pub fn report_heartbeat(ctx: Context<ReportHeartbeat>, status: Heartbeat) -> Result<()> {
+        crate::instructions::payouts::handle_report_heartbeat(ctx, status)
+    }
+
+    pub fn claim_treasury(ctx: Context<FounderClaim>) -> Result<()> {
+        crate::instructions::payouts::handle_claim_treasury(ctx)
+    }
+
+    pub fn claim_fees(ctx: Context<FounderClaim>) -> Result<()> {
+        crate::instructions::payouts::handle_claim_fees(ctx)
+    }
+
+    pub fn claim_founder_tokens(ctx: Context<ClaimFounderTokens>) -> Result<()> {
+        crate::instructions::payouts::handle_claim_founder_tokens(ctx)
+    }
+
+    pub fn claim_platform_tokens(ctx: Context<ClaimPlatformTokens>) -> Result<()> {
+        crate::instructions::payouts::handle_claim_platform_tokens(ctx)
+    }
+
+    pub fn wind_down(ctx: Context<WindDown>) -> Result<()> {
+        crate::instructions::wind_down::handle_wind_down(ctx)
+    }
+
+    pub fn claim_refund(ctx: Context<ClaimRefund>, amount: u64) -> Result<()> {
+        crate::instructions::wind_down::handle_claim_refund(ctx, amount)
     }
 }
