@@ -13,11 +13,16 @@
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.10.1",
     "@prisma/client": "^7.10.1",
+    "@solana-program/compute-budget": "^0.20.0",
+    "@solana-program/token": "^0.18.0",
+    "@solana/kit": "^8.6.0",
     "dotenv": "^18.0.10",
     "fastify": "^5.12.8"
   },

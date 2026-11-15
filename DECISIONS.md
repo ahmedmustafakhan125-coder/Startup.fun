@@ -154,3 +154,40 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
     signing with a script key. A buy quoted 160,013.410303 tokens and received 160,013.410302.
     Not yet run on devnet: the founder token claim (nothing unlocks before month 13) and the
     real Phantom popup.
+
+## Phase 6
+
+1. **A wallet has one server-side draft.** The wizard runs its four checks before the fee is
+   paid, so `PUT /applications/draft` creates a `draft` application for the checks to attach to.
+   Its id is the `application_id` in `pay_verification_fee`; `POST /applications` turns it into
+   `submitted` after verifying that payment. Changing the domain, repository or social handle
+   voids the check that proved the old value.
+2. **The server issues the DNS record** (`obverse-verify=<16 hex>`), tied to the draft. A code the
+   browser picked could be copied from another site's public DNS.
+3. **Fee verification reads the transaction's `ApplicationFeePaid` event**: right application id,
+   payer equal to the signed-in wallet, amount at least the configured fee, and emitted while the
+   Obverse program was executing (`programEvents` in `sdk/`). A fee signature works once.
+4. **The fee is paid once.** The browser keeps the payment signature in the saved draft, so a
+   retry after a failed submit reuses it. The checks are confirmed before the wallet is asked to pay.
+5. **Sessions are an HMAC-signed, HttpOnly, SameSite=Lax cookie**, seven days, no session table.
+   Sign-in nonces are kept in memory (single process). One signature right after connecting.
+6. **The API is reached through the Vite dev server** (`/api` proxy), so there is one origin and
+   no CORS. Serving a production build needs a reverse proxy that does the same.
+7. **"Re-run checks" is also the hand check.** The admin screen has one button, so it re-runs the
+   automated checks and records the founder-details check as confirmed by that reviewer.
+8. **The domain check never reaches private addresses** (it is founder-supplied input): names
+   only, resolved addresses checked against a block list, redirects not followed, status only.
+9. **`DOMAIN_MODE=mock`** exists for scripted demos. The default is the real check.
+10. **GitHub**: with OAuth keys set, the wizard sends the founder to GitHub and the callback checks
+    that they administer the repository or own the organisation; the token is used once and not
+    stored. Without keys the check is a mock pass. The real path is not yet run (no keys).
+11. **Listing is claimed in the database before the transaction is sent**, so the timer and an
+    admin cannot list the same application twice. A failed listing goes back to review.
+12. **`GET /startups` serves the profile and checks only.** On-chain state is read by the
+    frontend directly; a server-side cache would be a second source of truth.
+13. **Startup ids are the lower-case ticker** in live mode.
+14. **Sample profiles** for the eight seeded startups are loaded with `npm run db:seed` in `server/`.
+15. **Verified on devnet** through the live store with stand-in wallets: sign-in, draft, checks,
+    a real 300 USDC fee payment, the approval gate, "List now", and a listing scheduled 20
+    seconds ahead that the job sent on time. The real domain check passed against the TXT record
+    `example.com` already publishes and failed for a record that is not there.

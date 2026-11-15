@@ -241,8 +241,8 @@ export default function Admin() {
               {s.phase === 'raising' && (
                 <button
                   className="btn btn-glass btn-sm"
-                  onClick={() => {
-                    const r = adminCloseRaise(s.id)
+                  onClick={async () => {
+                    const r = await adminCloseRaise(s.id)
                     r.ok ? toast({ tone: 'ok', title: `${s.name} raise closed`, body: 'Treasury locked and trading opened.', coin: s.ticker }) : toast({ tone: 'error', title: 'Could not close the raise', body: r.error })
                   }}
                 >
@@ -350,9 +350,13 @@ export default function Admin() {
               {!allPass && app.status !== 'rejected' && app.status !== 'listed' && (
                 <button
                   className="btn btn-glass btn-sm"
-                  onClick={() => {
-                    adminRunChecks(app.id)
-                    toast({ tone: 'ok', title: 'Checks re-run', body: 'Simulated on devnet: open checks now pass.' })
+                  onClick={async () => {
+                    const r = await adminRunChecks(app.id)
+                    toast(
+                      r.ok
+                        ? { tone: 'ok', title: 'Checks re-run', body: LIVE ? 'The automated checks ran again and the founder details are confirmed.' : 'Simulated on devnet: open checks now pass.' }
+                        : { tone: 'error', title: 'Could not re-run the checks', body: r.error },
+                    )
                   }}
                 >
                   <Icon name="refresh" size={15} />
@@ -388,8 +392,9 @@ export default function Admin() {
                     <button
                       className="btn btn-lime"
                       disabled={!allPass || !when}
-                      onClick={() => {
-                        adminSchedule(app.id, new Date(when + 'T12:00:00').getTime())
+                      onClick={async () => {
+                        const r = await adminSchedule(app.id, new Date(when + 'T12:00:00').getTime())
+                        if (!r.ok) return toast({ tone: 'error', title: 'Could not schedule', body: r.error })
                         toast({ tone: 'ok', title: `${app.name} approved`, body: `Scheduled to list on ${dateLong(new Date(when + 'T12:00:00').getTime())}.` })
                         setOpenId(null)
                         setTab('scheduled')
@@ -400,8 +405,8 @@ export default function Admin() {
                     <button
                       className="btn btn-glass"
                       disabled={!allPass}
-                      onClick={() => {
-                        const r = adminListNow(app.id)
+                      onClick={async () => {
+                        const r = await adminListNow(app.id)
                         if (r.ok) {
                           toast({ tone: 'ok', title: `${app.name} is listed`, body: 'Its raise is open.', coin: app.ticker })
                           setOpenId(null)
@@ -422,8 +427,9 @@ export default function Admin() {
                   <button
                     className="btn btn-danger mt-3 w-full"
                     disabled={reason.trim().length < 8}
-                    onClick={() => {
-                      adminReject(app.id, reason.trim())
+                    onClick={async () => {
+                      const r = await adminReject(app.id, reason.trim())
+                      if (!r.ok) return toast({ tone: 'error', title: 'Could not reject', body: r.error })
                       toast({ tone: 'info', title: `${app.name} rejected`, body: 'The founder can read your note.' })
                       setOpenId(null)
                       setTab('closed')

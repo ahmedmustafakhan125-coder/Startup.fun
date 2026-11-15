@@ -1,4 +1,5 @@
-import { useState, type InputHTMLAttributes, type ReactNode } from 'react'
+import { explorerTx, LIVE } from '../chain/client'
+import { useState, type InputHTMLAttributes, type ReactNode, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Coin } from '../components/Coin'
 import { CheckMark, Icon, PageHead, Panel, cx } from '../components/ui'
@@ -51,7 +52,7 @@ function missing(d: Draft, step: number): string | null {
 export default function ListWizard() {
   const draft = useStore(s => s.draft)
   const wallet = useStore(s => s.wallet)
-  const { setDraft, submitApplication } = useStore.getState()
+  const { setDraft, submitApplication, verifyCheck, syncDraft } = useStore.getState()
   const { toast, openConnect } = useUi()
   const nav = useNavigate()
   const [running, setRunning] = useState<string | null>(null)
@@ -63,12 +64,19 @@ export default function ListWizard() {
     <input className="input" value={draft[key] as string} onChange={e => set({ [key]: e.target.value } as Partial<Draft>)} {...props} />
   )
 
-  const verify = (key: keyof Draft['verified']) => {
+  // Live mode: the server issues the DNS record and remembers which checks passed.
+  useEffect(() => {
+    if (LIVE && step === 2) void syncDraft()
+  }, [step, wallet.address, syncDraft])
+
+  const verify = async (key: keyof Draft['verified']) => {
+    if (LIVE && !wallet.address) return openConnect(true)
     setRunning(key)
-    setTimeout(() => {
-      setDraft({ verified: { ...useStore.getState().draft.verified, [key]: true } })
-      setRunning(null)
-    }, 1300)
+    // In mock mode a short pause stands in for the check running.
+    if (!LIVE) await new Promise(resolve => setTimeout(resolve, 1300))
+    const r = await verifyCheck(key)
+    setRunning(null)
+    if (!r.ok) toast({ tone: 'error', title: 'That check did not pass', body: r.error })
   }
   const copy = async () => {
     try {
@@ -78,18 +86,17 @@ export default function ListWizard() {
       toast({ tone: 'info', title: 'Select the record and copy it by hand' })
     }
   }
-  const submit = () => {
+  const submit = async () => {
     if (!wallet.address) return openConnect(true)
     setSubmitting(true)
-    setTimeout(() => {
-      const ticker = draft.ticker.toUpperCase()
-      const r = submitApplication()
-      setSubmitting(false)
-      if (r.ok) {
-        toast({ tone: 'ok', title: 'Application submitted', body: `Review takes ${REVIEW_MIN_DAYS} to ${REVIEW_MAX_DAYS} days. Track it on the Founder page.`, coin: ticker })
-        nav('/founder')
-      } else toast({ tone: 'error', title: 'Could not submit', body: r.error })
-    }, 900)
+    if (!LIVE) await new Promise(resolve => setTimeout(resolve, 900))
+    const ticker = draft.ticker.toUpperCase()
+    const r = await submitApplication()
+    setSubmitting(false)
+    if (r.ok) {
+      toast({ tone: 'ok', title: 'Application submitted', body: `Review takes ${REVIEW_MIN_DAYS} to ${REVIEW_MAX_DAYS} days. Track it on the Founder page.`, coin: ticker, href: r.signature && explorerTx(r.signature) })
+      nav('/founder')
+    } else toast({ tone: 'error', title: 'Could not submit', body: r.error })
   }
 
   const salePrice = draft.raiseTarget / SUPPLY.sale

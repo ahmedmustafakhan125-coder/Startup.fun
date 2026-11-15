@@ -138,6 +138,10 @@ export interface Draft {
   feeCap: number
   verified: Record<'kyc' | 'domain' | 'github' | 'socials', boolean>
   code: string
+  // live mode only: the server's draft application, and the fee payment if it went through
+  // before the application was accepted (so a retry never pays twice)
+  id?: string
+  feeSignature?: string
 }
 
 // `signature` is set in live mode, for the explorer link.

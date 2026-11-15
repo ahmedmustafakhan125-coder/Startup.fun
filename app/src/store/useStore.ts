@@ -104,12 +104,16 @@ export interface Actions {
   claimRefund: (id: string) => Async<Result>
   setDraft: (patch: Partial<Draft>) => void
   resetDraft: () => void
-  submitApplication: () => Result
-  adminRunChecks: (appId: string) => void
-  adminSchedule: (appId: string, when: number) => void
-  adminReject: (appId: string, reason: string) => void
-  adminListNow: (appId: string) => Result
-  adminCloseRaise: (id: string) => Result
+  /** Runs one of the wizard's four checks and records the result in the draft. */
+  verifyCheck: (key: keyof Draft['verified']) => Async<Result>
+  /** Live mode: saves the draft on the server and loads its DNS record and check results. */
+  syncDraft: () => Promise<void>
+  submitApplication: () => Async<Result>
+  adminRunChecks: (appId: string) => Async<Result>
+  adminSchedule: (appId: string, when: number) => Async<Result>
+  adminReject: (appId: string, reason: string) => Async<Result>
+  adminListNow: (appId: string) => Async<Result>
+  adminCloseRaise: (id: string) => Async<Result>
   adminSetHeartbeat: (id: string, hb: Heartbeat) => void
   adminAdvanceMonth: () => string[]
   founderClaimTreasury: (id: string) => Async<Result>
@@ -353,6 +357,11 @@ export const useStore = create<Data & Actions>()(
 
         setDraft: patch => set(st => ({ draft: { ...st.draft, ...patch } })),
         resetDraft: () => set({ draft: emptyDraft() }),
+        verifyCheck: key => {
+          set(st => ({ draft: { ...st.draft, verified: { ...st.draft.verified, [key]: true } } }))
+          return { ok: true }
+        },
+        syncDraft: async () => {},
 
         submitApplication: () => {
           const err = needWallet()
@@ -395,7 +404,7 @@ export const useStore = create<Data & Actions>()(
           return { ok: true }
         },
 
-        adminRunChecks: appId =>
+        adminRunChecks: appId => {
           set(st => ({
             applications: st.applications.map(a => {
               if (a.id !== appId) return a
@@ -406,17 +415,23 @@ export const useStore = create<Data & Actions>()(
               })
               return { ...a, checks, status: a.status === 'submitted' ? 'in_review' : a.status }
             }),
-          })),
+          }))
+          return { ok: true }
+        },
 
-        adminSchedule: (appId, when) =>
+        adminSchedule: (appId, when) => {
           set(st => ({
             applications: st.applications.map(a => (a.id === appId ? { ...a, status: 'scheduled', scheduledFor: when, decidedAt: Date.now() } : a)),
-          })),
+          }))
+          return { ok: true }
+        },
 
-        adminReject: (appId, reason) =>
+        adminReject: (appId, reason) => {
           set(st => ({
             applications: st.applications.map(a => (a.id === appId ? { ...a, status: 'rejected', rejectionReason: reason, decidedAt: Date.now() } : a)),
-          })),
+          }))
+          return { ok: true }
+        },
 
         adminListNow: appId => {
           const st = get()

@@ -1,10 +1,10 @@
 import { afterAll, describe, expect, it } from 'vitest'
-import { buildApp, type HealthResponse } from '../src/app.ts'
-import { createDb } from '../src/db.ts'
+import type { HealthResponse } from '../src/app.ts'
 import { loadEnv } from '../src/env.ts'
+import { testApp } from './helpers.ts'
 
-describe('GET /health', () => {
-  const app = buildApp({ db: createDb('file::memory:') })
+describe('GET /health', async () => {
+  const { app } = await testApp()
   afterAll(() => app.close())
 
   it('reports ok with a reachable database', async () => {

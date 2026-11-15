@@ -1,5 +1,6 @@
 // Database schema. SQLite on devnet; keep every type Postgres-compatible
-// (ARCHITECTURE.md section 9.3). Models arrive in Phase 6.
+// (ARCHITECTURE.md section 9.3): no enums and no Json columns, so statuses are strings and
+// lists are JSON text. Money is BigInt base units (6 decimals) unless a field says whole USDC.
 
 generator client {
   provider = "prisma-client"
@@ -8,4 +9,205 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+}
+
+model User {
+  address   String   @id
+  createdAt DateTime @default(now())
+
+  @@map("users")
+}
+
+/// Everything from the listing form. A wallet has one `draft` while it runs the checks in the
+/// wizard; submitting with a verified fee payment turns it into `submitted`.
+model Application {
+  id              String    @id @default(uuid())
+  wallet          String
+  /// draft | submitted | in_review | scheduled | rejected | listed
+  status          String    @default("draft")
+  founderName     String    @default("")
+  founderRole     String    @default("")
+  country         String    @default("")
+  email           String    @default("")
+  name            String    @default("")
+  ticker          String    @default("")
+  tagline         String    @default("")
+  about           String    @default("")
+  category        String    @default("")
+  website         String    @default("")
+  github          String    @default("")
+  social          String    @default("")
+  /// Whole USDC.
+  raiseTarget     Int       @default(0)
+  monthlyBudget   Int       @default(0)
+  feeCap          Int       @default(0)
+  /// The DNS TXT record that proves domain ownership.
+  verifyCode      String
+  feeSignature    String?   @unique
+  submittedAt     DateTime?
+  scheduledFor    DateTime?
+  decidedAt       DateTime?
+  rejectionReason String?
+  startupTicker   String?
+  createdAt       DateTime  @default(now())
+  checks          Check[]
+
+  @@index([wallet])
+  @@index([status])
+  @@map("applications")
+}
+
+model Check {
+  id            Int         @id @default(autoincrement())
+  applicationId String
+  /// kyc | domain | github | socials | founder
+  key           String
+  /// passed | pending | failed
+  status        String
+  detail        String
+  checkedAt     DateTime?
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([applicationId, key])
+  @@map("checks")
+}
+
+/// Off-chain profile of a listed startup, plus the heartbeat job's running state.
+model Startup {
+  ticker         String   @id
+  applicationId  String?  @unique
+  name           String
+  tagline        String   @default("")
+  about          String   @default("")
+  category       String   @default("")
+  country        String   @default("")
+  website        String   @default("")
+  github         String   @default("")
+  social         String   @default("")
+  /// JSON: [{ name, role }]
+  founders       String   @default("[]")
+  founderWallet  String
+  address        String
+  mint           String
+  verifyCode     String   @default("")
+  listedAt       DateTime @default(now())
+  /// Failing heartbeat runs in a row, and runs since the last AI review.
+  failingRuns    Int      @default(0)
+  runsSinceAi    Int      @default(0)
+  /// green | red while an admin override holds, otherwise null.
+  override       String?
+  overrideReason String?
+
+  @@map("startups")
+}
+
+model Update {
+  id        Int      @id @default(autoincrement())
+  ticker    String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([ticker])
+  @@map("updates")
+}
+
+model HeartbeatRun {
+  id        Int      @id @default(autoincrement())
+  ticker    String
+  /// JSON: { website, code, socials, update } each { passed, detail }
+  results   String
+  failing   Boolean
+  /// green | red: the status this run left the startup in.
+  verdict   String
+  signature String?
+  createdAt DateTime @default(now())
+
+  @@index([ticker, createdAt])
+  @@map("heartbeat_runs")
+}
+
+model AiReview {
+  id            Int      @id @default(autoincrement())
+  ticker        String
+  score         Int
+  /// active | unclear | inactive
+  verdict       String
+  /// JSON string arrays.
+  reasons       String
+  evidence      String
+  model         String
+  promptVersion String
+  createdAt     DateTime @default(now())
+
+  @@index([ticker, createdAt])
+  @@map("ai_reviews")
+}
+
+/// Rule checks and the AI review disagreed; a person decides.
+model Flag {
+  id          Int       @id @default(autoincrement())
+  ticker      String
+  /// passing | failing
+  ruleVerdict String
+  aiVerdict   String
+  aiReviewId  Int
+  resolution  String?
+  resolvedBy  String?
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([resolvedAt])
+  @@map("flags")
+}
+
+/// Indexed from Traded and Committed events. One row per event.
+model Trade {
+  signature  String
+  eventIndex Int
+  ticker     String
+  /// buy | sell | commit
+  side       String
+  wallet     String
+  usdc       BigInt
+  tokens     BigInt
+  fee        BigInt   @default(0)
+  /// USDC per token after the trade.
+  price      Float
+  ts         DateTime
+
+  @@id([signature, eventIndex])
+  @@index([ticker, ts])
+  @@index([wallet])
+  @@map("trades")
+}
+
+/// Volume and platform revenue by source per UTC day, in base units.
+model DailyStat {
+  date         String @id
+  volume       BigInt @default(0)
+  trading      BigInt @default(0)
+  verification BigInt @default(0)
+  graduation   BigInt @default(0)
+
+  @@map("daily_stats")
+}
+
+/// Signatures the indexer has already processed, so a restart or a replay never double-counts.
+model IndexedSignature {
+  signature String   @id
+  ts        DateTime
+
+  @@map("indexed_signatures")
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  actor     String
+  action    String
+  target    String
+  detail    String   @default("")
+  signature String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_log")
 }

@@ -50,6 +50,8 @@ anchor test      # builds, then runs the Rust tests in tests/ on LiteSVM
 cd server
 cp .env.example .env    # then fill in what you need; .env is git-ignored
 npm install             # also generates the Prisma client
+npm run db:migrate      # create or update the database
+npm run db:seed         # optional: profiles for the sample startups from scripts/seed.ts
 npm run dev             # http://127.0.0.1:8787
 curl http://127.0.0.1:8787/health
 npm test

@@ -2,14 +2,15 @@
 // Each action validates like the mock does, sends one transaction through the wallet, then re-reads
 // the chain so the screen shows on-chain state.
 import type { Address, Instruction } from '@solana/kit'
-import { LIVE, sendWithWallet } from '../chain/client'
+import { api, ApiError, type FormFields, type ServerApplication, setApiWallet, signIn } from '../api/client'
+import { LIVE, sendWithWallet, UserError } from '../chain/client'
 import { type Action, explain } from '../chain/errors'
 import { exactBalance, loadChain, type Ref, refOf } from '../chain/read'
-import { buyTx, claimFeesTx, claimFounderTokensTx, claimRefundTx, claimTreasuryTx, commitTx, faucetTx, sellTx, toBase } from '../chain/tx'
-import { DEMO_AIRDROP } from '../config'
+import { buyTx, claimFeesTx, claimFounderTokensTx, claimRefundTx, claimTreasuryTx, commitTx, faucetTx, payVerificationFeeTx, sellTx, toBase } from '../chain/tx'
+import { DEMO_AIRDROP, VERIFICATION_FEE } from '../config'
 import { claimableFees, claimableTreasury, founderClaimable, quoteBuy, quoteSell } from '../lib/curve'
-import type { Result, Trade } from './types'
-import type { Actions, Data } from './useStore'
+import type { Draft, Result, Trade } from './types'
+import { type Actions, type Data, emptyDraft } from './useStore'
 
 /** How far the price may move against the trader between the quote and the transaction. */
 const SLIPPAGE = 0.01
@@ -18,10 +19,11 @@ const REFRESH_MS = 20_000
 type Store = Data & Actions
 type AddTrade = (t: Omit<Trade, 'id' | 'ts' | 'wallet' | 'mine'>) => void
 
-/** Live mode starts empty and fills from the chain. Applications and admin numbers stay sample data until Phases 6 and 8. */
+/** Live mode starts empty and fills from the chain and the API. Admin numbers stay sample data until Phase 8. */
 export const liveSeed = (data: Data): Data => ({
   ...data,
   startups: [],
+  applications: [],
   trades: [],
   holdings: {},
   wallet: { address: null, kind: null, usdc: 0 },
@@ -34,10 +36,44 @@ export function liveActions(
 ): Partial<Actions> {
   const refresh = async () => {
     const owner = get().wallet.address as Address | null
-    const snapshot = await loadChain(owner, get().holdings)
+    setApiWallet(owner)
+    // The server is optional for reading: without it startups still load, with blank profiles.
+    const [profiles, me] = await Promise.all([api.startups().catch(() => []), owner ? api.me() : null])
+    const snapshot = await loadChain(owner, get().holdings, profiles)
+    const signedIn = me?.address === owner
+    const applications = !signedIn ? [] : await (me.admin ? api.adminApplications() : api.mine()).catch(() => [])
     // Ignore the answer if the wallet changed while it was loading.
     if (get().wallet.address !== owner) return
-    set(st => ({ startups: snapshot.startups, holdings: snapshot.holdings, wallet: { ...st.wallet, usdc: snapshot.usdc } }))
+    set(st => ({
+      startups: snapshot.startups,
+      holdings: snapshot.holdings,
+      wallet: { ...st.wallet, usdc: snapshot.usdc },
+      applications: applications.map(a => ({ ...a, mine: a.wallet === owner })),
+    }))
+  }
+
+  const fields = (d: Draft): FormFields => ({
+    founderName: d.founderName, founderRole: d.founderRole, country: d.country, email: d.email, name: d.name, ticker: d.ticker.toUpperCase(),
+    tagline: d.tagline, about: d.about, category: d.category, website: d.website.trim().toLowerCase(), github: d.github, social: d.social,
+    raiseTarget: d.raiseTarget, monthlyBudget: d.monthlyBudget, feeCap: d.feeCap,
+  })
+  /** Saves the wizard's draft on the server and takes over its id, DNS record and check results. */
+  const saveDraft = async (): Promise<ServerApplication> => {
+    const a = await api.saveDraft(fields(get().draft))
+    const passed = (key: keyof Draft['verified']) => a.checks[key].status === 'passed'
+    set(st => ({ draft: { ...st.draft, id: a.id, code: a.code, verified: { kyc: passed('kyc'), domain: passed('domain'), github: passed('github'), socials: passed('socials') } } }))
+    return a
+  }
+  const problem = (error: unknown) => (error instanceof ApiError || error instanceof UserError ? error.message : explain(error, 'usdc'))
+  /** Runs one server call for an admin action and re-reads state. */
+  const server = async (call: () => Promise<ServerApplication | unknown>): Promise<Result> => {
+    try {
+      const answer = (await call()) as Partial<ServerApplication> | undefined
+      await refresh().catch(() => {})
+      return { ok: true, message: answer?.startupId }
+    } catch (error) {
+      return { ok: false, error: problem(error) }
+    }
   }
 
   /** Sends one transaction for the connected wallet and re-reads the chain. */
@@ -59,10 +95,72 @@ export function liveActions(
   return {
     refresh,
     connect: (kind, address) => {
-      set({ wallet: { kind, address: address ?? null, usdc: 0 }, holdings: {} })
-      void refresh().catch(() => {})
+      // A draft's server id and fee payment belong to one wallet.
+      const sameWallet = get().wallet.address === address
+      set(st => ({
+        wallet: { kind, address: address ?? null, usdc: 0 },
+        holdings: {},
+        draft: sameWallet ? st.draft : { ...st.draft, id: undefined, feeSignature: undefined },
+      }))
+      void (async () => {
+        await refresh().catch(() => {})
+        // One signature right after connecting signs the wallet in to the backend.
+        if (address && (await api.me())?.address !== address) {
+          await signIn(address).catch(() => {})
+          await refresh().catch(() => {})
+        }
+      })()
     },
-    disconnect: () => set({ wallet: { kind: null, address: null, usdc: 0 }, holdings: {} }),
+    disconnect: () => {
+      set({ wallet: { kind: null, address: null, usdc: 0 }, holdings: {}, applications: [] })
+      setApiWallet(null)
+      void api.logout()
+    },
+
+    syncDraft: async () => {
+      if (get().wallet.address) await saveDraft().catch(() => {}) // a failure shows when a check is run
+    },
+    verifyCheck: async key => {
+      if (!get().wallet.address) return { ok: false, error: 'Connect a wallet first.' }
+      try {
+        const { id } = await saveDraft()
+        const answer = await api.verify(id, key)
+        if (answer.redirect) {
+          window.location.href = api.url(answer.redirect) // GitHub sign-in; it returns to this form
+          return { ok: true }
+        }
+        const passed = answer.check?.status === 'passed'
+        set(st => ({ draft: { ...st.draft, verified: { ...st.draft.verified, [key]: passed } } }))
+        return passed ? { ok: true } : { ok: false, error: answer.check?.detail ?? 'The check did not pass.' }
+      } catch (error) {
+        return { ok: false, error: problem(error) }
+      }
+    },
+    submitApplication: async () => {
+      const owner = get().wallet.address as Address | null
+      if (!owner) return { ok: false, error: 'Connect a wallet first.' }
+      const paid = get().draft.feeSignature
+      if (!paid && get().wallet.usdc < VERIFICATION_FEE) return { ok: false, error: `The verification fee is ${VERIFICATION_FEE} USDC. Use the faucet in Portfolio.` }
+      try {
+        const { id } = await saveDraft()
+        // Never take the fee for an application the server would refuse.
+        if (Object.values(get().draft.verified).some(passed => !passed)) return { ok: false, error: 'Pass the four checks before submitting.' }
+        // Pay once: the signature is kept in the saved draft, so a retry after a failed submit reuses it.
+        const feeSignature = paid ?? (await sendWithWallet(owner, await payVerificationFeeTx(owner, id)))
+        set(st => ({ draft: { ...st.draft, feeSignature } }))
+        await api.submit({ ...fields(get().draft), id, feeSignature })
+        set({ draft: emptyDraft() })
+        await refresh().catch(() => {})
+        return { ok: true, signature: feeSignature }
+      } catch (error) {
+        return { ok: false, error: problem(error) }
+      }
+    },
+    adminRunChecks: id => server(() => api.runChecks(id)),
+    adminSchedule: (id, when) => server(() => api.schedule(id, when)),
+    adminReject: (id, reason) => server(() => api.reject(id, reason)),
+    adminListNow: id => server(() => api.listNow(id)),
+    adminCloseRaise: id => server(() => api.closeRaise(id)),
     airdrop: () => send('usdc', null, owner => faucetTx(owner, toBase(DEMO_AIRDROP))),
 
     commit: async (id, usdc) => {

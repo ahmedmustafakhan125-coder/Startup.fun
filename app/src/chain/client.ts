@@ -43,6 +43,9 @@ interface SignTransactionFeature {
     chain: 'solana:devnet'
   }): Promise<readonly { signedTransaction: Uint8Array }[]>
 }
+interface SignMessageFeature {
+  signMessage(input: { account: StandardAccount; message: Uint8Array }): Promise<readonly { signature: Uint8Array }[]>
+}
 interface ConnectFeature {
   connect(input?: { silent?: boolean }): Promise<{ accounts: readonly StandardAccount[] }>
 }
@@ -52,14 +55,22 @@ async function walletFor(owner: string) {
   for (const wallet of getWallets().get()) {
     const features = wallet.features as Record<string, unknown>
     const sign = features['solana:signTransaction'] as SignTransactionFeature | undefined
+    const message = features['solana:signMessage'] as SignMessageFeature | undefined
     if (!sign) continue
     let account: StandardAccount | undefined = wallet.accounts.find(a => a.address === owner)
     const connect = features['standard:connect'] as ConnectFeature | undefined
     // After a page reload the wallet is still authorised but lists no accounts until asked.
     if (!account && connect) account = (await connect.connect({ silent: true })).accounts.find(a => a.address === owner)
-    if (account) return { sign, account }
+    if (account) return { sign, message, account }
   }
   throw new UserError('Your wallet is not available. Reconnect it and try again.')
+}
+
+/** Has the wallet sign a plain message (used to sign in to the backend). */
+export async function signMessageWithWallet(owner: string, message: Uint8Array): Promise<Uint8Array> {
+  const found = await walletFor(owner)
+  if (!found.message) throw new UserError('This wallet cannot sign messages, which signing in needs.')
+  return (await found.message.signMessage({ account: found.account, message }))[0].signature
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))

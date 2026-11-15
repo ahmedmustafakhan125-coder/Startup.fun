@@ -1,6 +1,6 @@
 // Reads program state from devnet and shapes it into the objects the pages already render.
-// Profiles (name, tagline, links) come from the bundled sample data until the backend serves them
-// (Phase 6); volume, backers and price history need the indexer (Phase 8) and stay empty.
+// Profiles (name, tagline, links, checks) come from the backend; volume, backers and price
+// history need the indexer (Phase 8) and stay empty.
 import { findAssociatedTokenPda, TOKEN_PROGRAM_ADDRESS } from '@solana-program/token'
 import { type Address, type Base58EncodedBytes, getBase58Decoder } from '@solana/kit'
 import {
@@ -24,8 +24,8 @@ import {
   STARTUP_DISCRIMINATOR,
 } from '../../../sdk/src/index.ts'
 import { GRADUATION_FEE, SUPPLY, TREASURY_SHARE, WINDDOWN_DAYS } from '../config'
-import { allPassed, seedStartups } from '../data/seed'
-import type { Holding, Startup } from '../store/types'
+import type { Profile } from '../api/client'
+import type { Check, Holding, Startup } from '../store/types'
 import { rpc } from './client'
 
 const UNIT = 1e6
@@ -83,15 +83,15 @@ const u64At = (data: Uint8Array, offset: number) => new DataView(data.buffer, da
 async function amounts(addresses: Address[], offset = 64): Promise<bigint[]> {
   const out: bigint[] = []
   for (let i = 0; i < addresses.length; i += 100) {
-    const { value } = await rpc.getMultipleAccounts(addresses.slice(i, i + 100), { encoding: 'base64' }).send()
+    const { value } = await rpc.getMultipleAccounts(addresses.slice(i, i + 100), { encoding: 'base64', commitment: 'confirmed' }).send()
     for (const account of value) out.push(account ? u64At(bytes(account.data[0]), offset) : 0n)
   }
   return out
 }
 
-const profiles = new Map(seedStartups().map(s => [s.ticker, s]))
-const blankProfile = (ticker: string): Startup => ({
-  ...seedStartups()[0],
+const notChecked: Check = { status: 'pending', detail: 'Not checked yet', checkedAt: null }
+/** A startup that is on-chain but has no profile on the server (listed by a script, or the server is down). */
+const blankProfile = (ticker: string): Profile => ({
   id: ticker.toLowerCase(),
   name: ticker,
   ticker,
@@ -103,11 +103,11 @@ const blankProfile = (ticker: string): Startup => ({
   github: '',
   social: '',
   founders: [],
-  checks: allPassed('', '', ''),
+  listedAt: 0,
+  checks: { kyc: notChecked, domain: notChecked, github: notChecked, socials: notChecked, founder: notChecked },
 })
 
-function toStartup(c: ChainStartup, config: Config, balance: Record<string, bigint>, owner: string | null): Startup {
-  const profile = profiles.get(c.ticker) ?? blankProfile(c.ticker)
+function toStartup(c: ChainStartup, config: Config, balance: Record<string, bigint>, owner: string | null, profile: Profile): Startup {
   const now = Math.floor(Date.now() / 1000)
   const month = Number(config.monthSeconds)
   const live = c.phase === Phase.Live
@@ -132,7 +132,7 @@ function toStartup(c: ChainStartup, config: Config, balance: Record<string, bigi
     // One on-chain "month" stands for 30 days, so the wind-down wait shows as 60 days.
     redDays: Math.min(WINDDOWN_DAYS, Math.floor((redSeconds / month) * 30)),
     lastBeat: Number(c.lastBeat) * 1000,
-    beats: profile.beats.map(() => (red ? 0 : 1)),
+    beats: Array<number>(14).fill(red ? 0 : 1),
     raiseTarget,
     raised,
     salePrice,
@@ -171,11 +171,12 @@ export interface Snapshot {
 }
 
 /** Every startup on-chain plus, when a wallet is connected, its USDC and token balances. */
-export async function loadChain(owner: Address | null, previous: Record<string, Holding>): Promise<Snapshot> {
+export async function loadChain(owner: Address | null, previous: Record<string, Holding>, profiles: Profile[]): Promise<Snapshot> {
   const { config } = await getCtx()
   const accounts = await rpc
     .getProgramAccounts(OBVERSE_PROGRAM_ADDRESS, {
       encoding: 'base64',
+      commitment: 'confirmed', // the same level transactions are confirmed at, so the screen never lags its own actions
       filters: [
         { memcmp: { offset: 0n, encoding: 'base58', bytes: getBase58Decoder().decode(STARTUP_DISCRIMINATOR) as Base58EncodedBytes } },
       ],
@@ -195,6 +196,7 @@ export async function loadChain(owner: Address | null, previous: Record<string, 
       config,
       { supply: supplies[i], treasury, feeVault, reserve, poolUsdc, poolToken, refund, founderLock, platformLock },
       owner,
+      profiles.find(p => p.ticker === c.data.ticker) ?? blankProfile(c.data.ticker),
     )
     refs.set(s.id, { startup: c.address, mint: c.data.mint })
     return s

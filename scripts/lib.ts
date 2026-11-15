@@ -3,7 +3,6 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 
-import { getSetComputeUnitLimitInstruction } from '@solana-program/compute-budget'
 import { getTransferSolInstruction } from '@solana-program/system'
 import {
   findAssociatedTokenPda,
@@ -12,17 +11,9 @@ import {
 } from '@solana-program/token'
 import {
   type Address,
-  appendTransactionMessageInstructions,
   createKeyPairSignerFromBytes,
-  createTransactionMessage,
-  getBase64EncodedWireTransaction,
-  getSignatureFromTransaction,
   type Instruction,
   type KeyPairSigner,
-  pipe,
-  setTransactionMessageFeePayerSigner,
-  setTransactionMessageLifetimeUsingBlockhash,
-  signTransactionMessageWithSigners,
 } from '@solana/kit'
 
 import {
@@ -32,10 +23,10 @@ import {
   findMintPda,
   findStartupAddress,
   findUsdcMintPda,
-  getCreateStartupInstructionAsync,
-  getCreateStartupVaultsInstructionAsync,
   getFaucetInstructionAsync,
+  listStartupInstructions,
   OBVERSE_PROGRAM_ADDRESS,
+  sendAndConfirm,
 } from '../sdk/src/index.ts'
 
 export const RPC_URL = process.env.RPC_URL || 'https://api.devnet.solana.com'
@@ -69,28 +60,13 @@ export async function wallet(name: string): Promise<KeyPairSigner> {
 
 /** Sends one transaction, waits for confirmation, prints an explorer link and returns the signature. */
 export async function send(label: string, payer: KeyPairSigner, instructions: Instruction[], units?: number) {
-  const { value: blockhash } = await rpc.getLatestBlockhash().send()
-  const all = units ? [getSetComputeUnitLimitInstruction({ units }), ...instructions] : instructions
-  const message = pipe(
-    createTransactionMessage({ version: 0 }),
-    m => setTransactionMessageFeePayerSigner(payer, m),
-    m => setTransactionMessageLifetimeUsingBlockhash(blockhash, m),
-    m => appendTransactionMessageInstructions(all, m),
-  )
-  const tx = await signTransactionMessageWithSigners(message)
-  const signature = getSignatureFromTransaction(tx)
-  await rpc.sendTransaction(getBase64EncodedWireTransaction(tx), { encoding: 'base64' }).send()
-  // Poll instead of subscribing: fewer moving parts on the public devnet endpoint.
-  for (let i = 0; i < 45; i++) {
-    await sleep(2_000)
-    const status = (await rpc.getSignatureStatuses([signature]).send()).value[0]
-    if (status?.err) throw new Error(`${label} failed: ${explorer('tx', signature)}`)
-    if (status?.confirmationStatus === 'confirmed' || status?.confirmationStatus === 'finalized') {
-      console.log(`  ok  ${label}\n      ${explorer('tx', signature)}`)
-      return signature
-    }
+  try {
+    const signature = await sendAndConfirm(rpc, payer, instructions, units)
+    console.log(`  ok  ${label}\n      ${explorer('tx', signature)}`)
+    return signature
+  } catch (error) {
+    throw new Error(`${label}: ${(error as Error).message}`)
   }
-  throw new Error(`${label} was not confirmed in time: ${explorer('tx', signature)}`)
 }
 
 export async function ata(owner: Address, mint: Address): Promise<Address> {
@@ -153,14 +129,6 @@ export async function list(
   const startup = await findStartupAddress(args.ticker)
   const [mint] = await findMintPda({ startup })
   if ((await fetchMaybeStartup(rpc, startup)).exists) return { startup, mint, created: false }
-  await send(
-    `list ${args.ticker}`,
-    operator,
-    [
-      await getCreateStartupInstructionAsync({ operator, startup, ...args }),
-      await getCreateStartupVaultsInstructionAsync({ operator, usdcMint, startup }),
-    ],
-    400_000,
-  )
+  await send(`list ${args.ticker}`, operator, await listStartupInstructions(operator, usdcMint, args), 400_000)
   return { startup, mint, created: true }
 }

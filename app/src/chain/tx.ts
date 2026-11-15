@@ -10,6 +10,7 @@ import {
   getClaimTreasuryInstructionAsync,
   getCommitInstructionAsync,
   getFaucetInstructionAsync,
+  getPayVerificationFeeInstructionAsync,
   getSellInstructionAsync,
 } from '../../../sdk/src/index.ts'
 import { ata, getCtx, type Ref } from './read'
@@ -27,6 +28,20 @@ export async function faucetTx(owner: Address, amount: bigint): Promise<Instruct
   return [
     await ensureAta(owner, usdcMint),
     await getFaucetInstructionAsync({ user: signer(owner), usdcMint, userUsdc: await ata(owner, usdcMint), amount }),
+  ]
+}
+
+/** The 300 USDC verification fee. The application id travels in the event the backend matches. */
+export async function payVerificationFeeTx(owner: Address, applicationId: string): Promise<Instruction[]> {
+  const { config, platformUsdc } = await getCtx()
+  return [
+    await getPayVerificationFeeInstructionAsync({
+      founder: signer(owner),
+      usdcMint: config.usdcMint,
+      founderUsdc: await ata(owner, config.usdcMint),
+      platformUsdc,
+      applicationId,
+    }),
   ]
 }
 

@@ -1,9 +1,11 @@
 import Fastify, { type FastifyInstance } from 'fastify'
-import type { Db } from './db.ts'
+import { applicationRoutes, type Deps } from './applications.ts'
+import { authRoutes } from './auth.ts'
+import { githubRoutes } from './github.ts'
 
-export interface AppDeps {
-  db: Db
-  logger?: boolean
+export interface AppDeps extends Deps {
+  /** `true` logs to stdout; a stream captures the log (tests). */
+  logger?: boolean | { stream: { write(line: string): void } }
 }
 
 export interface HealthResponse {
@@ -14,8 +16,15 @@ export interface HealthResponse {
   time: string
 }
 
-export function buildApp({ db, logger = false }: AppDeps): FastifyInstance {
-  const app = Fastify({ logger })
+export function buildApp({ logger = false, ...deps }: AppDeps): FastifyInstance {
+  const { db } = deps
+  // Log the path only: query strings can carry OAuth codes, and headers carry the session cookie.
+  const serializers = { req: (req: { method: string; url: string }) => ({ method: req.method, url: req.url.split('?')[0] }) }
+  const app = Fastify({ logger: logger && { serializers, ...(logger === true ? {} : logger) } })
+  app.decorateRequest('wallet', '')
+  authRoutes(app, deps)
+  githubRoutes(app, deps)
+  applicationRoutes(app, deps)
 
   app.get('/health', async (_req, reply): Promise<HealthResponse> => {
     let dbOk = true

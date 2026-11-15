@@ -162,24 +162,28 @@ Before any Solana work in any phase, look up the current APIs with the `solana` 
 
 **Goal:** the listing form, the checks and the admin queue are real.
 
-- [ ] Wallet sign-in (nonce, signature, session) and the admin guard.
-- [ ] Database schema and migrations for users, applications, checks, startups, audit log.
-- [ ] `POST /applications` verifies the `pay_verification_fee` transaction before accepting.
-- [ ] Check adapters: domain (real DNS TXT + HTTPS), GitHub (OAuth, real when keys are set), KYC
+- [x] Wallet sign-in (nonce, signature, session) and the admin guard.
+- [x] Database schema and migrations for users, applications, checks, startups, audit log.
+- [x] `POST /applications` verifies the `pay_verification_fee` transaction before accepting.
+- [x] Check adapters: domain (real DNS TXT + HTTPS), GitHub (OAuth, real when keys are set), KYC
       (mock), socials (mock), founder details (admin action).
-- [ ] Admin routes: queue, re-run checks, schedule, reject with reason, list now, close raise.
-- [ ] Scheduled listing job that sends `create_startup` with the operator key.
-- [ ] Public routes: startups list and detail.
-- [ ] `app/src/api/` client; wire the wizard, Founder page timeline and Admin queue in live mode.
+- [x] Admin routes: queue, re-run checks, schedule, reject with reason, list now, close raise.
+- [x] Scheduled listing job that sends `create_startup` with the operator key.
+- [x] Public routes: startups list and detail.
+- [x] `app/src/api/` client; wire the wizard, Founder page timeline and Admin queue in live mode.
 
 **Done when**
 
+> Open: the first box needs a person to add a TXT record to a domain they control. The whole flow
+> ran on devnet with `DOMAIN_MODE=mock`, and the real DNS and HTTPS check was run against a public
+> domain's existing TXT record (see `DECISIONS.md`).
+
 - [ ] A founder can apply end to end in live mode: pay the fee, add a real TXT record to a domain they
       control, pass the checks, and see the application on the Founder page.
-- [ ] An admin wallet can approve with a date and the startup lists itself at that time; "List now"
+- [x] An admin wallet can approve with a date and the startup lists itself at that time; "List now"
       works; reject shows the reason to the founder.
-- [ ] A non-admin wallet gets 403 on every admin route.
-- [ ] API tests pass with mock adapters; no secret appears in logs.
+- [x] A non-admin wallet gets 403 on every admin route.
+- [x] API tests pass with mock adapters; no secret appears in logs.
 
 ---
 

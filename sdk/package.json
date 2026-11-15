@@ -19,6 +19,7 @@
     "typescript": "^5.9.0"
   },
   "dependencies": {
+    "@solana-program/compute-budget": "^0.20.0",
     "@solana/kit": "^8.6.0",
     "@solana/program-client-core": "^8.6.0"
   }
