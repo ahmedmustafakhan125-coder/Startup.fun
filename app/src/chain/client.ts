@@ -18,9 +18,10 @@ import { createRpc, OBVERSE_PROGRAM_ADDRESS } from '../../../sdk/src/index.ts'
 export const LIVE = import.meta.env.VITE_DATA_SOURCE === 'live'
 
 const RPC_URL = import.meta.env.VITE_RPC_URL || 'https://api.devnet.solana.com'
-// A value pasted into a hosting dashboard can pick up spaces, quotes or backticks. Only the
-// address characters are compared, so a stray character does not take the whole site down.
-const configuredProgram = (import.meta.env.VITE_PROGRAM_ID ?? '').replace(/[^1-9A-HJ-NP-Za-km-z]/g, '')
+// A value pasted into a hosting dashboard can pick up spaces, quotes or backticks, or be pasted
+// more than once. Only the address characters of the first word are compared, so a slip like
+// that does not take the whole site down.
+const configuredProgram = ((import.meta.env.VITE_PROGRAM_ID ?? '').trim().split(/\s+/)[0] ?? '').replace(/[^1-9A-HJ-NP-Za-km-z]/g, '')
 if (LIVE && configuredProgram && configuredProgram !== OBVERSE_PROGRAM_ADDRESS)
   throw new Error('VITE_PROGRAM_ID does not match the generated client. Run `npm run generate` in sdk/.')
 
