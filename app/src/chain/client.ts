@@ -27,6 +27,9 @@ if (LIVE && configuredProgram && configuredProgram !== OBVERSE_PROGRAM_ADDRESS)
 
 export const rpc = createRpc(RPC_URL)
 export const explorerTx = (signature: string) => `https://explorer.solana.com/tx/${signature}?cluster=devnet`
+/** The deployed program, for pages that show it. */
+export const PROGRAM_ID: string = OBVERSE_PROGRAM_ADDRESS
+export const explorerAddress = (address: string) => `https://explorer.solana.com/address/${address}?cluster=devnet`
 
 /** Where the transaction in flight is, so buttons can say so. */
 export type TxStage = 'wallet' | 'confirming' | null

@@ -15,6 +15,8 @@ const links = [
   { to: '/list', label: 'List a startup', short: 'List', icon: 'plus' },
   { to: '/portfolio', label: 'Portfolio', icon: 'wallet' },
   { to: '/founder', label: 'Founder', icon: 'briefcase' },
+  // The phone bar has room for five, so About sits in the top bar and the footer only.
+  { to: '/about', label: 'About', icon: 'user', wide: true },
 ]
 
 type PhantomProvider = { connect: () => Promise<{ publicKey: { toString(): string } }>; disconnect?: () => Promise<void> }
@@ -159,7 +161,7 @@ export function Nav() {
       </header>
       <nav className="fixed bottom-3 left-0 right-0 z-50 px-3 md:hidden" aria-label="Main">
         <div className="glass-bar mx-auto flex h-[62px] max-w-[460px] items-stretch justify-between px-2" style={{ borderRadius: 26 }}>
-          {links.map(l => {
+          {links.filter(l => !l.wide).map(l => {
             const on = pathname.startsWith(l.to)
             return (
               <Link key={l.to} to={l.to} className={cx('flex flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl text-[11.5px] font-medium', on ? 'text-lime' : 'text-ink2')} aria-current={on ? 'page' : undefined}>
@@ -219,7 +221,12 @@ export function Footer() {
             {BRAND} runs on Solana {NETWORK.toLowerCase()} with demo funds. Startups and figures shown here are sample data.
           </span>
         </span>
-        <span>Tokens are not shares and carry no claim beyond the refund rule in the program.</span>
+        <span>
+          Tokens are not shares and carry no claim beyond the refund rule in the program.{' '}
+          <Link to="/about" className="text-ink2 underline hover:text-ink">
+            About {BRAND}
+          </Link>
+        </span>
       </div>
     </footer>
   )

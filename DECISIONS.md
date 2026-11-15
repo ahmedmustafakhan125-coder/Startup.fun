@@ -318,6 +318,18 @@ Asked for by the owner, outside the phase plan.
 - The coins on the pages are unchanged. They show a startup's ticker and its heartbeat; they are
   not the product logo.
 
+## About page and moving background (2026-11-15)
+
+- **`/about`** shows what the product is, who built it and the program ID with a copy button and
+  an explorer link. The personal details (name, title, GitHub, company site, email) are the ones
+  the owner chose to make public; they live in `ABOUT` in `app/src/config.ts`. The program ID
+  comes from the generated client, so it cannot drift from what the app talks to.
+- About is in the top bar and the footer. The phone bar keeps its five items.
+- **The star background floats.** Each star layer sits in a wrapper that CSS moves around a slow
+  loop, the near layer further than the far one, plus three occasional shooting stars. Only
+  transforms change, so the canvases are still painted once. Visitors who ask for reduced motion
+  get the still version.
+
 ## Known limits
 
 - `initialize_config` makes its first caller the admin. Fine while the deploy script calls it

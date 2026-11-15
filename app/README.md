@@ -26,6 +26,7 @@ npm run build:preview  # one self-contained index.html in dist-preview/
 | `/list` | Listing wizard: founder, startup, verification (DNS code, GitHub, socials, KYC), raise and budget, review and pay |
 | `/founder` | Founder: application timeline, monthly treasury claim, capped fee claim, token vesting, heartbeat checks |
 | `/portfolio` | Holdings, gain/loss, refunds, activity, demo USDC faucet |
+| `/about` | What the product is, who built it, the program ID with an explorer link |
 | `/admin` | Not in the menu, opens with the admin password. Revenue, daily volume, escrow, review queue (approve, schedule, reject, list now), heartbeat controls, demo month clock |
 
 ## How it is wired

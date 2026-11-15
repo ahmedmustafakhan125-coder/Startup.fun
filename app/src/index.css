@@ -109,6 +109,75 @@ h3 {
   top: 0;
   will-change: transform;
 }
+/* The floating: each star layer wanders around a slow loop, the near one further and faster. */
+.star-drift {
+  position: absolute;
+  inset: -90px;
+  will-change: transform;
+  animation: star-drift 46s ease-in-out infinite;
+}
+.star-drift[data-layer='near'] {
+  animation-name: star-drift-near;
+  animation-duration: 34s;
+}
+@keyframes star-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-26px, 14px, 0);
+  }
+  50% {
+    transform: translate3d(-8px, 34px, 0);
+  }
+  75% {
+    transform: translate3d(22px, 12px, 0);
+  }
+}
+@keyframes star-drift-near {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(54px, -28px, 0);
+  }
+  50% {
+    transform: translate3d(78px, 26px, 0);
+  }
+  75% {
+    transform: translate3d(18px, 58px, 0);
+  }
+}
+/* A streak that crosses a corner of the sky, then waits out the rest of its loop unseen. */
+.shooting-star {
+  position: absolute;
+  width: 130px;
+  height: 1.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(234, 242, 255, 0), rgba(234, 242, 255, 0.9));
+  opacity: 0;
+  transform: rotate(152deg) translateX(0);
+  animation: shooting-star 13s linear infinite;
+}
+@keyframes shooting-star {
+  0% {
+    opacity: 0;
+    transform: rotate(152deg) translateX(0);
+  }
+  1.5% {
+    opacity: 1;
+  }
+  6% {
+    opacity: 0;
+    transform: rotate(152deg) translateX(420px);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(152deg) translateX(420px);
+  }
+}
 @keyframes twinkle {
   0%,
   100% {

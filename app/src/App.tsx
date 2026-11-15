@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import { AdminGate } from './components/AdminGate'
 import { ConnectModal, Footer, Nav, Toasts } from './components/Shell'
 import { Starfield } from './components/Starfield'
+import About from './pages/About'
 import Admin from './pages/Admin'
 import Explore from './pages/Explore'
 import FounderDashboard from './pages/FounderDashboard'
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/list" element={<ListWizard />} />
           <Route path="/founder" element={<FounderDashboard />} />
           <Route path="/portfolio" element={<Portfolio />} />
+          <Route path="/about" element={<About />} />
           <Route path="/admin" element={<AdminGate><Admin /></AdminGate>} />
           <Route path="*" element={<Home />} />
         </Routes>

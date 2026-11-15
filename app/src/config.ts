@@ -3,6 +3,19 @@
 export const BRAND = 'Startup.fun'
 export const NETWORK = 'Devnet'
 
+// Who is behind the project, shown on the About page. An empty field or list is left out.
+export const ABOUT: { name: string; role: string; bio: string; links: { label: string; href: string }[]; source: string } = {
+  name: 'Ahmed Mustafa Khan',
+  role: 'Founder and developer',
+  bio: '',
+  links: [
+    { label: 'GitHub', href: 'https://github.com/ahmedmustafakhan125-coder' },
+    { label: 'Noxyra AI', href: 'https://noxyra-ai.com' },
+    { label: 'ahmedmustafakhan125@gmail.com', href: 'mailto:ahmedmustafakhan125@gmail.com' },
+  ],
+  source: 'https://github.com/ahmedmustafakhan125-coder/Startup.fun',
+}
+
 export const SUPPLY = {
   total: 100_000_000,
   sale: 65_000_000, // sold in the raise

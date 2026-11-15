@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react'
 
 // Two layers of stars drawn once onto canvases, then shifted a little on scroll for depth.
-// Nothing redraws per frame, so the glass panels above stay cheap to blur.
+// The layers float: each sits in a wrapper that CSS moves slowly, the near one further than the
+// far one. Only transforms change, so the canvases are never repainted.
 
 const EXTRA = 420 // spare height so parallax never runs out of stars
+const DRIFT = 90 // spare room on every side so floating never shows an edge (matches .star-drift)
 
 function rand(seed: number) {
   let a = seed >>> 0
@@ -80,6 +82,13 @@ const twinkles = (() => {
   }))
 })()
 
+// Three shooting stars on long, unequal loops, so they never fall into a rhythm.
+const shooting = [
+  { left: 62, top: 8, delay: 3, dur: 13 },
+  { left: 18, top: 22, delay: 9, dur: 19 },
+  { left: 84, top: 38, delay: 15, dur: 27 },
+]
+
 export function Starfield() {
   const far = useRef<HTMLCanvasElement>(null)
   const near = useRef<HTMLCanvasElement>(null)
@@ -92,8 +101,8 @@ export function Starfield() {
       if (nw === w && far.current?.width) return
       w = nw
       const h = Math.max(window.innerHeight, window.screen?.height || 0) + EXTRA
-      if (far.current) paint(far.current, w, h, 'far')
-      if (near.current) paint(near.current, w, h, 'near')
+      if (far.current) paint(far.current, w + DRIFT * 2, h + DRIFT * 2, 'far')
+      if (near.current) paint(near.current, w + DRIFT * 2, h + DRIFT * 2, 'near')
     }
     draw()
     let raf = 0
@@ -124,8 +133,15 @@ export function Starfield() {
   return (
     <div className="backdrop" aria-hidden="true">
       <div className="nebula" />
-      <canvas ref={far} className="stars" />
-      <canvas ref={near} className="stars" />
+      <div className="star-drift" data-layer="far">
+        <canvas ref={far} className="stars" />
+      </div>
+      <div className="star-drift" data-layer="near">
+        <canvas ref={near} className="stars" />
+      </div>
+      {shooting.map((s, i) => (
+        <span key={i} className="shooting-star" style={{ left: s.left + '%', top: s.top + '%', animationDelay: s.delay + 's', animationDuration: s.dur + 's' }} />
+      ))}
       {twinkles.map((s, i) => (
         <span
           key={i}
