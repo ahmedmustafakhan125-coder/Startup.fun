@@ -305,6 +305,19 @@ Asked for by the owner, outside the phase plan.
 - `APP_URL` in `server/.env` is the Vercel address. It marks the cookie `Secure` and is where
   the GitHub check redirects back to.
 
+## Name and logo (2026-11-15)
+
+- The owner supplied a logo: a two-tone capsule with the wordmark "Startup.fun". It was sent as
+  a JPEG with a checkerboard baked in, so the capsule was redrawn as a vector in
+  `app/src/components/Logo.tsx`. It is in the header, the footer and the browser tab icon.
+- `BRAND` is now `Startup.fun`, since the logo carries that name. Only what people read changed:
+  the page title, the header, the footer, the "server did not answer" message and the wallet
+  sign-in message. Internal names stay `obverse` (the program, the DNS verification record,
+  saved browser state, the service and container names), because renaming those would break
+  what is already deployed.
+- The coins on the pages are unchanged. They show a startup's ticker and its heartbeat; they are
+  not the product logo.
+
 ## Known limits
 
 - `initialize_config` makes its first caller the admin. Fine while the deploy script calls it

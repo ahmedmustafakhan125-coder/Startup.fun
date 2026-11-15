@@ -1,5 +1,6 @@
 // Typed HTTP client for the backend (live mode only). Pages never call this; store actions do.
 import { signMessageWithWallet } from '../chain/client'
+import { BRAND } from '../config'
 import type { Application, Check, Checks, DayStat, Flag, Heartbeat, Holding, Leader, Startup, Trade } from '../store/types'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
@@ -31,7 +32,7 @@ async function request<T>(method: string, path: string, body?: unknown, interact
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
-    throw new ApiError(0, 'Offline', 'The Obverse server did not answer. Try again in a moment.')
+    throw new ApiError(0, 'Offline', `The ${BRAND} server did not answer. Try again in a moment.`)
   }
   if (res.status === 401 && interactive && wallet && path !== '/auth/verify') {
     await signIn(wallet)

@@ -879,3 +879,14 @@ select.input option {
     animation: hiw-grow var(--step-ms, 5s) linear both;
   }
 }
+
+/* The logo tips a little when its link is hovered. */
+@layer components {
+  .logo-host svg {
+    transition: transform 0.35s cubic-bezier(0.2, 0.75, 0.2, 1);
+  }
+  .logo-host:hover svg,
+  .logo-host:focus-visible svg {
+    transform: rotate(-18deg) scale(1.06);
+  }
+}

@@ -5,6 +5,7 @@ import { BRAND, DEMO_AIRDROP, NETWORK } from '../config'
 import { shortAddr, usd } from '../lib/format'
 import { useStore, useUi } from '../store/useStore'
 import { Coin } from './Coin'
+import { Logo } from './Logo'
 import { Icon, Modal, cx } from './ui'
 
 // Admin is left out on purpose: it is reached by typing /admin and unlocking it.
@@ -139,8 +140,8 @@ export function Nav() {
     <>
       <header className="fixed left-0 right-0 top-3 z-50 px-3 sm:top-4">
         <div className="glass-bar mx-auto flex h-[58px] max-w-[1180px] items-center gap-2 pl-3 pr-2.5">
-          <Link to="/" className="coin-host mr-1 flex items-center gap-2.5 rounded-full pr-2" aria-label={`${BRAND} home`}>
-            <Coin label="O" size={32} hover />
+          <Link to="/" className="logo-host mr-1 flex items-center gap-2 rounded-full pr-2" aria-label={`${BRAND} home`}>
+            <Logo size={36} />
             <span className="font-display text-[19px] font-semibold tracking-tight">{BRAND}</span>
           </Link>
           <nav className="ml-2 hidden items-center gap-1 md:flex" aria-label="Main">
@@ -212,8 +213,11 @@ export function Footer() {
   return (
     <footer className="mx-auto mt-24 max-w-[1180px] px-5 pb-32 text-sm text-ink3 md:pb-12">
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[.07] pt-6">
-        <span>
-          {BRAND} runs on Solana {NETWORK.toLowerCase()} with demo funds. Startups and figures shown here are sample data.
+        <span className="flex items-center gap-2.5">
+          <Logo size={28} />
+          <span>
+            {BRAND} runs on Solana {NETWORK.toLowerCase()} with demo funds. Startups and figures shown here are sample data.
+          </span>
         </span>
         <span>Tokens are not shares and carry no claim beyond the refund rule in the program.</span>
       </div>

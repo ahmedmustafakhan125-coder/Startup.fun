@@ -67,7 +67,7 @@ export function authRoutes(app: FastifyInstance, { db, env }: { db: Db; env: Env
       }
       for (const [key, nonce] of nonces) if (nonce.expires < Date.now()) nonces.delete(key)
       if (nonces.size >= MAX_PENDING_NONCES) return reply.code(503).send({ error: 'Busy', message: 'Too many wallets are signing in at once. Try again in a few minutes.' })
-      const message = `Sign in to Obverse (devnet)\nWallet: ${wallet}\nNonce: ${randomBytes(16).toString('hex')}`
+      const message = `Sign in to Startup.fun (devnet)\nWallet: ${wallet}\nNonce: ${randomBytes(16).toString('hex')}`
       nonces.set(wallet, { message, expires: Date.now() + NONCE_MS })
       return { message }
     },

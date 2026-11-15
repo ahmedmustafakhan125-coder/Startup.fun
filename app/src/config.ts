@@ -1,6 +1,6 @@
 // One place for every number and name the product depends on.
 // Change BRAND to rename the product everywhere.
-export const BRAND = 'Obverse'
+export const BRAND = 'Startup.fun'
 export const NETWORK = 'Devnet'
 
 export const SUPPLY = {
