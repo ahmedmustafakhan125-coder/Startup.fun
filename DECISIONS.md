@@ -289,6 +289,22 @@ Asked for by the owner, outside the phase plan.
 - Mock data now seeds 48 trades from 12 wallets so the leaderboard has an order. The saved demo
   state key moved to `obverse-demo-v3`, which resets demo changes saved in a browser once.
 
+## Hosting (2026-11-15)
+
+- **The frontend is on Vercel** (`https://startup-fun.vercel.app`), built from `app/` on every
+  push to `main`. `app/vercel.json` holds the build commands, because the build also needs
+  `../sdk` installed, and two rewrites: `/api/*` goes to the backend, and every other path
+  falls back to `index.html` so typed addresses such as `/admin` load.
+- **The backend stays on the VPS.** It needs a disk for the database and runs timed jobs, which
+  Vercel cannot host. Vercel forwards `/api` to it so the site and the API share one origin; the
+  session cookie is `SameSite=Lax` and would not be sent across origins.
+- **Public backend address:** `api-obverse.srv1198858.hstgr.cloud`, through the Traefik already
+  on the machine. `scripts/hosting/` has the systemd unit for the backend and a compose file for
+  a pass-through container that Traefik routes to. The backend itself runs on the host, since it
+  holds the operator key.
+- `APP_URL` in `server/.env` is the Vercel address. It marks the cookie `Secure` and is where
+  the GitHub check redirects back to.
+
 ## Known limits
 
 - `initialize_config` makes its first caller the admin. Fine while the deploy script calls it

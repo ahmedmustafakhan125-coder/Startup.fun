@@ -1,0 +1,39 @@
+# The Obverse backend as a permanent service on the host. It signs with the operator key, so it
+# runs here and never inside the internet-facing container.
+#
+# Install:
+#   cp scripts/hosting/obverse-server.service /etc/systemd/system/
+#   systemctl daemon-reload && systemctl enable --now obverse-server
+#
+# Restart after pulling backend changes:  systemctl restart obverse-server
+# Logs:                                   journalctl -u obverse-server -f
+#
+# It listens on the Docker bridge gateway, not on loopback: the proxy container in
+# docker-compose.yml reaches it there, and nothing outside this machine can. HOST below wins
+# over the one in server/.env. For local frontend work against this service, set
+# VITE_API_PROXY=http://172.18.0.1:8790 in app/.env.local.
+#
+# Only one backend may run at a time: it reports heartbeats and indexes trades, so stop any
+# `npm run dev` copy before starting this.
+[Unit]
+Description=Obverse backend (API, heartbeat job, indexer) on devnet
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/root/startup.fun/Startup.fun/server
+Environment=HOST=172.18.0.1
+Environment=PATH=/root/.nvm/versions/node/v24.22.1/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/root/.nvm/versions/node/v24.22.1/bin/npm run start
+# Docker creates the bridge address; until it exists the bind fails, and this retries.
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=obverse-server
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

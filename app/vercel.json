@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "npm install && npm install --prefix ../sdk",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://api-obverse.srv1198858.hstgr.cloud/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

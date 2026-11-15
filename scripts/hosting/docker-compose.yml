@@ -1,0 +1,40 @@
+# Gives the Obverse backend a public HTTPS address through the Traefik that already owns 80/443
+# on this machine. A separate compose project on purpose: it joins the n8n stack's network so
+# Traefik can discover it, and bringing it up or down restarts nothing else.
+#
+# Install:
+#   mkdir -p /docker/obverse && cp scripts/hosting/docker-compose.yml /docker/obverse/
+#   docker compose -f /docker/obverse/docker-compose.yml up -d
+#
+# The container holds no code and no secrets. It only passes connections to the backend, which
+# runs on the host (obverse-server.service) and listens on this network's gateway address.
+services:
+  api:
+    image: node:22-alpine
+    container_name: obverse-api
+    restart: always
+    command:
+      - node
+      - -e
+      - |
+        const net = require('node:net')
+        net.createServer(client => {
+          const backend = net.connect(8790, '172.18.0.1')
+          client.pipe(backend).pipe(client)
+          client.on('error', () => backend.destroy())
+          backend.on('error', () => client.destroy())
+        }).listen(8790, '0.0.0.0')
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=n8n_default
+      - traefik.http.services.obverse-api.loadbalancer.server.port=8790
+      - traefik.http.routers.obverse-api.rule=Host(`api-obverse.srv1198858.hstgr.cloud`)
+      - traefik.http.routers.obverse-api.entrypoints=web,websecure
+      - traefik.http.routers.obverse-api.tls=true
+      - traefik.http.routers.obverse-api.tls.certresolver=mytlschallenge
+    networks:
+      - n8n_default
+
+networks:
+  n8n_default:
+    external: true
