@@ -16,6 +16,8 @@ declare module 'fastify' {
 const COOKIE = 'obverse_session'
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000
 const NONCE_MS = 5 * 60 * 1000
+// Bounds the memory one client can make the server hold by asking for nonces for made-up addresses.
+const MAX_PENDING_NONCES = 10_000
 
 export const sign = (secret: string, value: string) => createHmac('sha256', secret).update(value).digest('base64url')
 
@@ -64,6 +66,7 @@ export function authRoutes(app: FastifyInstance, { db, env }: { db: Db; env: Env
         return reply.code(400).send({ error: 'InvalidAddress', message: 'That is not a wallet address.' })
       }
       for (const [key, nonce] of nonces) if (nonce.expires < Date.now()) nonces.delete(key)
+      if (nonces.size >= MAX_PENDING_NONCES) return reply.code(503).send({ error: 'Busy', message: 'Too many sign-ins at once. Try again in a few minutes.' })
       const message = `Sign in to Obverse (devnet)\nWallet: ${wallet}\nNonce: ${randomBytes(16).toString('hex')}`
       nonces.set(wallet, { message, expires: Date.now() + NONCE_MS })
       return { message }
@@ -97,7 +100,8 @@ export function authRoutes(app: FastifyInstance, { db, env }: { db: Db; env: Env
       await db.user.upsert({ where: { address: wallet }, create: { address: wallet }, update: {} })
       const expires = Date.now() + SESSION_MS
       const value = `${wallet}.${expires}.${sign(env.sessionSecret, `${wallet}.${expires}`)}`
-      reply.header('set-cookie', `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MS / 1000}`)
+      const secure = env.appUrl.startsWith('https://') ? '; Secure' : ''
+      reply.header('set-cookie', `${COOKIE}=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${SESSION_MS / 1000}${secure}`)
       return { address: wallet, admin: env.adminWallets.includes(wallet) }
     },
   )

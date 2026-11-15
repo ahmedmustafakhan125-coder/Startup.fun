@@ -6,7 +6,7 @@ import type { Chain } from './chain.ts'
 import { type AutoCheck, CHECK_KEYS, type CheckResult, type Checks, isDomain } from './checks.ts'
 import type { Db } from './db.ts'
 import type { Env } from './env.ts'
-import type { Application, Check, Startup } from './generated/prisma/client.ts'
+import type { Application, Check } from './generated/prisma/client.ts'
 
 export interface Deps {
   db: Db
@@ -51,12 +51,6 @@ export function view(a: App) {
   }
 }
 
-/** Public profile: no wallet-private fields (the application's email never leaves the owner and admins). */
-function profile(s: Startup, checks: Check[]) {
-  const { founders, failingRuns: _f, runsSinceAi: _r, verifyCode: _v, applicationId: _a, listedAt, ...rest } = s
-  return { ...rest, id: s.ticker.toLowerCase(), founders: JSON.parse(founders) as unknown, listedAt: listedAt.getTime(), checks: view({ checks } as App).checks }
-}
-
 /** Same rules as the listing wizard, enforced again here because the browser is not trusted. */
 function invalid(f: Form): string | null {
   if (!f.founderName?.trim() || !f.founderRole?.trim() || !f.country) return 'Add your name, role and country.'
@@ -84,7 +78,7 @@ export async function saveCheck(db: Db, applicationId: string, key: string, resu
 }
 
 const allPassed = (a: App) => CHECK_KEYS.every(key => a.checks.find(c => c.key === key)?.status === 'passed')
-const audit = (db: Db, actor: string, action: string, target: string, detail = '', signature?: string) =>
+export const audit = (db: Db, actor: string, action: string, target: string, detail = '', signature?: string) =>
   db.auditLog.create({ data: { actor, action, target, detail, signature } })
 
 /** Re-runs the automated checks. A check that was passed through GitHub sign-in is kept unless it now fails. */
@@ -255,14 +249,5 @@ export function applicationRoutes(app: FastifyInstance, deps: Deps) {
     } catch {
       return reply.code(409).send({ error: 'CloseFailed', message: 'The raise could not be closed. It is already closed or nothing was committed.' })
     }
-  })
-
-  // --- public ---
-
-  const checksOf = async (s: Startup) => (s.applicationId ? db.check.findMany({ where: { applicationId: s.applicationId } }) : [])
-  app.get('/startups', async () => Promise.all((await db.startup.findMany({ orderBy: { listedAt: 'desc' } })).map(async s => profile(s, await checksOf(s)))))
-  app.get<{ Params: { id: string } }>('/startups/:id', { schema: { params: idParams } }, async (req, reply) => {
-    const s = await db.startup.findUnique({ where: { ticker: req.params.id.toUpperCase() } })
-    return s ? profile(s, await checksOf(s)) : reply.code(404).send({ error: 'NotFound', message: 'Startup not found.' })
   })
 }

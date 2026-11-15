@@ -8,7 +8,13 @@ npm install
 npm run init    # once after a deploy: config, demo USDC mint, operator key
 npm run seed    # lists the sample startups so every lifecycle state exists on-chain
 npm run demo    # walks one new startup from listing to refunds (about 11 minutes)
+npm run walkthrough  # the same through the backend too: apply, verify, approve, raise, trade,
+                     # claim, go silent, wind down, refund (about 12 minutes)
+./check.sh      # every program, backend and build check
 ```
+
+`walkthrough` needs the server running with `DOMAIN_MODE=mock`, the deploy wallet in
+`ADMIN_WALLETS`, and `API_URL` pointing at it (default `http://127.0.0.1:8787`).
 
 - The admin is the deploy wallet (`~/.config/solana/id.json`, or `ADMIN_KEYPAIR_PATH`). It pays for everything.
 - Script wallets (`operator`, `founder`, `buyer`, `holder`) are created on first use in `keypairs/`,

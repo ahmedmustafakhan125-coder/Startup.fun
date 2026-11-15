@@ -64,6 +64,33 @@ export interface Startup {
   // live mode only: when trading opened (ms) and how long one on-chain "month" lasts (seconds)
   liveAt?: number
   periodSeconds?: number
+  // live mode only, from the backend: founder updates, the latest AI review (null when there is none)
+  // and an admin's heartbeat override
+  updates?: { id: number; body: string; createdAt: number }[]
+  aiReview?: AiReview | null
+  override?: Heartbeat | null
+  overrideReason?: string | null
+}
+
+export interface AiReview {
+  score: number
+  verdict: 'active' | 'unclear' | 'inactive'
+  reasons: string[]
+  evidence: string[]
+  createdAt: number
+}
+
+/** The rule checks and the AI review disagreed about a startup; an admin decides. */
+export interface Flag {
+  id: number
+  ticker: string
+  ruleVerdict: 'passing' | 'failing'
+  aiVerdict: AiReview['verdict']
+  score: number
+  reasons: string[]
+  createdAt: number
+  resolution?: string
+  resolvedAt?: number
 }
 
 export type AppStatus = 'submitted' | 'in_review' | 'scheduled' | 'rejected' | 'listed'

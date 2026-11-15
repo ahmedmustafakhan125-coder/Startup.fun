@@ -1,11 +1,15 @@
+import { createReviewer } from './ai.ts'
 import { buildApp } from './app.ts'
 import { runListingJob } from './applications.ts'
 import { createChain } from './chain.ts'
 import { createChecks } from './checks.ts'
 import { createDb } from './db.ts'
 import { loadEnv } from './env.ts'
+import { runHeartbeat } from './heartbeat.ts'
+import { runIndexer } from './indexer.ts'
 
 const LISTING_JOB_MS = 30_000
+const INDEXER_MS = 15_000
 
 const env = loadEnv()
 if (env.sessionSecret.length < 32) throw new Error('SESSION_SECRET must be set to at least 32 characters (see .env.example).')
@@ -35,3 +39,6 @@ function every(ms: number, name: string, job: () => Promise<void>) {
   }, ms)
 }
 every(LISTING_JOB_MS, 'listing job', () => runListingJob(deps))
+every(INDEXER_MS, 'indexer', async () => void (await runIndexer(deps)))
+const reviewer = createReviewer(env)
+every(env.heartbeatInterval * 1000, 'heartbeat job', () => runHeartbeat({ ...deps, reviewer }))

@@ -1,6 +1,6 @@
 // Typed HTTP client for the backend (live mode only). Pages never call this; store actions do.
 import { signMessageWithWallet } from '../chain/client'
-import type { Application, Check, Checks, Startup } from '../store/types'
+import type { Application, Check, Checks, DayStat, Flag, Heartbeat, Holding, Startup, Trade } from '../store/types'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -52,7 +52,10 @@ export async function signIn(address: string): Promise<{ address: string; admin:
 /** An application as the server sends it: the app's shape plus the owner wallet and the DNS record. */
 export type ServerApplication = Omit<Application, 'mine'> & { wallet: string; code: string }
 /** A listed startup's off-chain profile. */
-export type Profile = Pick<Startup, 'id' | 'name' | 'ticker' | 'tagline' | 'about' | 'category' | 'country' | 'website' | 'github' | 'social' | 'founders' | 'listedAt'> & { checks: Checks }
+export type Profile = Pick<Startup, 'id' | 'name' | 'ticker' | 'tagline' | 'about' | 'category' | 'country' | 'website' | 'github' | 'social' | 'founders' | 'listedAt' | 'beats' | 'history' | 'volume24h' | 'volumeTotal' | 'backers' | 'feesClaimedTotal'> &
+  Required<Pick<Startup, 'updates' | 'aiReview' | 'override' | 'overrideReason'>> & { checks: Checks; openPrice24h: number | null }
+/** A trade as the indexer recorded it. */
+export type ServerTrade = Omit<Trade, 'mine'>
 export type FormFields = Pick<Application, 'founderName' | 'founderRole' | 'country' | 'email' | 'name' | 'ticker' | 'tagline' | 'about' | 'category' | 'website' | 'github' | 'social' | 'raiseTarget' | 'monthlyBudget' | 'feeCap'>
 
 const admin = (id: string, action: string, body?: unknown) => request<ServerApplication>('POST', `/admin/applications/${id}/${action}`, body)
@@ -62,6 +65,10 @@ export const api = {
   logout: () => request<unknown>('POST', '/auth/logout', undefined, false).catch(() => null),
   me: () => request<{ address: string; admin: boolean }>('GET', '/me', undefined, false).catch(() => null),
   startups: () => request<Profile[]>('GET', '/startups', undefined, false),
+  trades: () => request<ServerTrade[]>('GET', '/trades', undefined, false),
+  /** Cost basis per startup id, from the wallet's indexed trades. */
+  positions: (address: string) => request<{ positions: Record<string, Holding> }>('GET', `/wallets/${address}/positions`, undefined, false),
+  stats: () => request<DayStat[]>('GET', '/admin/stats?range=60', undefined, false),
   saveDraft: (form: Partial<FormFields>) => request<ServerApplication>('PUT', '/applications/draft', form),
   verify: (id: string, check: string) => request<{ check?: Check; redirect?: string }>('POST', `/applications/${id}/verify/${check}`),
   submit: (form: FormFields & { id: string; feeSignature: string }) => request<ServerApplication>('POST', '/applications', form),
@@ -71,6 +78,10 @@ export const api = {
   schedule: (id: string, when: number) => admin(id, 'schedule', { when }),
   reject: (id: string, reason: string) => admin(id, 'reject', { reason }),
   listNow: (id: string) => admin(id, 'list-now'),
+  postUpdate: (id: string, body: string) => request<unknown>('POST', `/startups/${id}/updates`, { body }),
+  setHeartbeat: (id: string, status: Heartbeat | null, reason?: string) => request<unknown>('POST', `/admin/startups/${id}/heartbeat`, { status, reason }),
+  flags: () => request<Flag[]>('GET', '/admin/flags', undefined, false),
+  resolveFlag: (id: number, resolution: string) => request<unknown>('POST', `/admin/flags/${id}/resolve`, { resolution }),
   closeRaise: (id: string) => request<{ signature: string }>('POST', `/admin/startups/${id}/close-raise`),
   /** Where the browser goes for a server-side redirect, such as GitHub sign-in. */
   url: (path: string) => BASE + path,

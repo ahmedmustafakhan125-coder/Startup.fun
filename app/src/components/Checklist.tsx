@@ -1,5 +1,5 @@
 import { ago } from '../lib/format'
-import type { CheckKey, Checks } from '../store/types'
+import type { AiReview, CheckKey, Checks } from '../store/types'
 import { CheckMark, Icon } from './ui'
 
 export const CHECK_META: Record<CheckKey, { title: string; icon: string }> = {
@@ -31,6 +31,37 @@ export function Checklist({ checks }: { checks: Checks }) {
         )
       })}
     </ul>
+  )
+}
+
+/** The AI review as one more row of the verification list. It is a second opinion and never sets the heartbeat. */
+export function AiReviewRow({ review }: { review: AiReview | null }) {
+  const status = review?.verdict === 'active' ? 'passed' : review?.verdict === 'inactive' ? 'failed' : 'pending'
+  return (
+    <div className="flex items-start gap-3.5 border-t border-white/[.06] pt-3.5">
+      <span className="mt-0.5 grid h-9 w-9 flex-none place-items-center rounded-full bg-white/[.06] text-ink2">
+        <Icon name="shield" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="font-semibold">AI review</div>
+        {review ? (
+          <>
+            <div className="text-[15px] text-ink2">
+              Looks {review.verdict}, scored {review.score} of 100. {review.reasons.join(' ')}
+            </div>
+            {review.evidence.map(link => (
+              <a key={link} href={link} target="_blank" rel="noopener noreferrer" className="block truncate text-sm text-ink2 underline">
+                {link}
+              </a>
+            ))}
+            <div className="text-sm text-ink3">Reviewed {ago(review.createdAt)}. A second opinion only: it cannot change the heartbeat.</div>
+          </>
+        ) : (
+          <div className="text-[15px] text-ink2">Not available yet.</div>
+        )}
+      </div>
+      <CheckMark status={status} />
+    </div>
   )
 }
 

@@ -191,3 +191,93 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
     a real 300 USDC fee payment, the approval gate, "List now", and a listing scheduled 20
     seconds ahead that the job sent on time. The real domain check passed against the TXT record
     `example.com` already publishes and failed for a record that is not there.
+
+## Phase 7
+
+1. **Heartbeat defaults on devnet:** a run every 60 seconds, Red after 2 failing runs in a row,
+   an AI review every 5 runs. Production values (daily, 7, 7) are in `server/.env.example`.
+2. **The four recurring checks:** website = the domain check (TXT record still present and HTTPS
+   answers); code = a push within 30 days (public GitHub data, real even without OAuth keys);
+   socials = the social adapter (mock); update = a founder update in the current or previous
+   on-chain period.
+3. **The job only reports on a change**, plus a Green report once a period to refresh `last_beat`.
+   A failed report is retried by the next run, because the chain still differs.
+4. **An admin override holds until cleared** and is applied at once; the rule counters keep
+   running underneath it. Clearing does not report anything; the next run decides.
+5. **Sample startups are pinned by an override** (`npm run db:seed`), because they have no real
+   site or repository to check. Without it the job would turn them all Red.
+6. **After listing, the profile's domain, code and social rows show the latest heartbeat run**,
+   not the application-time result.
+7. **AI review: Gemini via its REST API** (`gemini-2.5-flash` by default), key in a header so it
+   never appears in a URL or log, temperature 0.1, JSON output, prompt version `v1`. Founder
+   text is length-limited and wrapped in markers the text itself cannot contain. Output that
+   does not match the schema is dropped; evidence keeps plain https links only.
+8. **At most one open flag per startup**, so a long disagreement is not one flag per run.
+9. **Heartbeat run history keeps the last 2,500 runs** across all startups.
+10. **Verified on devnet** with the real domain check: a startup on `example.org` without its TXT
+    record and without an update turned Red after two runs, the treasury claim was rejected, a
+    founder update made the run pass and it recovered to Green, and the claim then worked. The
+    10-minute wind-down wait then ran under an admin "silent" override (the startup was healthy
+    again, so the rules alone would not have turned it Red a second time).
+11. **Not run against a real model:** there is no `AI_API_KEY`. The review is covered by unit
+    tests with a stand-in reviewer, including output that tries to follow an injected
+    instruction (it can only raise a flag) and malformed output (dropped).
+
+## Phase 8
+
+1. **The indexer walks the program's signature list** (`getSignaturesForAddress`), not a log
+   subscription. Each pass picks up after the newest stored signature, reads each transaction's
+   logs once, and writes its rows and the signature in one database transaction. A signature
+   already stored is skipped, so restarts and replays never double-count. A transaction that is
+   not readable yet stops the pass, so nothing is skipped. It polls every 15 seconds.
+2. **Events count only while the Obverse program is executing** (`programEvents` follows the
+   invoke stack in the logs).
+3. **Volume is what moved through the pool:** the payment on a buy, payout plus fee on a sell.
+   Commits are trades in the list but not volume. Revenue by source: the platform's 0.30% of each
+   trade fee, listing fees from `RaiseClosed`, verification fees from `ApplicationFeePaid`.
+4. **Cost basis is average cost:** a sale removes its share of what was paid. Tokens that were
+   never bought (a founder's unlocked allocation) have no cost.
+5. **Admin numbers are shown to admins only.** Everyone else sees zeros, never sample data.
+6. **Price history is the last 120 indexed prices**, and the chart always ends at the price
+   the chain shows now.
+7. **The test fixture is four real devnet transactions** (`server/test/fixtures/transactions.json`):
+   a commit that fills a raise, a buy, a sell and a verification fee.
+
+## Phase 9
+
+1. **`scripts/walkthrough.ts`** runs the whole product through the real API and the devnet
+   program with script wallets: apply, four checks, fee, admin review, list now, raise, trade,
+   founder update and claim, indexer, silent (admin override), rejected payout, wind-down,
+   refunds. It passed twice in a row from a clean database (tickers JVWBD and YGJVQ). It needs
+   `DOMAIN_MODE=mock`, because a script cannot add a DNS record.
+2. **`scripts/check.sh`** runs every program, backend and build check, and puts the machine's
+   Solana CLI version back afterwards (`anchor build` switches it).
+3. **Indexer completeness:** from an empty database it indexed all 123 program transactions on
+   devnet, none missing.
+4. **Program security review (ARCHITECTURE.md 4.4): no changes needed.** Every account is tied
+   to its startup by seeds or `has_one`, token accounts by mint and authority; every privileged
+   instruction checks its signer; claims check pause, then phase, then heartbeat, then amounts;
+   mint authority is removed at listing; `paused` never blocks `claim_refund`. Seven plain
+   additions and subtractions remain, each bounded by an invariant checked just before it
+   (`raised <= raise_target`, fee at most the amount, payout at most gross), and the release
+   build has `overflow-checks = true`, so a broken invariant fails the transaction instead of
+   wrapping.
+5. **Server hardening added:** pending sign-in nonces are capped at 10,000; the session cookie
+   gets `Secure` when `APP_URL` is https.
+
+## Known limits
+
+- `initialize_config` makes its first caller the admin. Fine while the deploy script calls it
+  straight after deploying; gate it on the upgrade authority before anything of value.
+- The admin can change `month_seconds` and `winddown_seconds` at any time, which also moves the
+  periods and vesting of startups that are already live.
+- One operator key reports every heartbeat. It is the trusted part of the system.
+- KYC and social checks are mocked. GitHub ownership is real only with OAuth keys, and that path
+  has not been run (no keys yet). The AI review has not been run against a real model (no key).
+- The domain check resolves the name and then requests it; in between the address could change.
+  It only ever reads the response status.
+- Sign-in nonces live in memory: one server process only.
+- The frontend reaches the API through the Vite dev server. A production build needs a reverse
+  proxy that serves `/api` the same way.
+- The public devnet RPC endpoint limits requests per IP; everything backs off on HTTP 429.
+- Empty, loading and error states have not been checked by eye in a browser.

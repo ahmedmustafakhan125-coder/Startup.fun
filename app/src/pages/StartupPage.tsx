@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { AreaChart } from '../components/Charts'
-import { Beats, Checklist } from '../components/Checklist'
+import { AiReviewRow, Beats, Checklist } from '../components/Checklist'
 import { Coin } from '../components/Coin'
 import { Change, coinTone } from '../components/StartupRow'
 import { TradePanel } from '../components/TradePanel'
@@ -217,8 +217,26 @@ export default function StartupPage() {
             </div>
             <div className="mt-5">
               <Checklist checks={s.checks} />
+              {s.aiReview !== undefined && (
+                <div className="mt-3.5">
+                  <AiReviewRow review={s.aiReview} />
+                </div>
+              )}
             </div>
           </Panel>
+
+          {s.updates !== undefined && (
+            <Panel>
+              <h2 className="text-[24px]">Founder updates</h2>
+              {s.updates.length === 0 && <p className="mb-0 mt-3 text-ink2">No updates posted yet.</p>}
+              {s.updates.map(u => (
+                <div key={u.id} className="mt-4 border-t border-white/[.06] pt-4 first:mt-3">
+                  <div className="text-sm text-ink3">Posted {ago(u.createdAt)}</div>
+                  <p className="mb-0 mt-1.5 max-w-[68ch] whitespace-pre-wrap text-[16px] leading-relaxed text-ink2">{u.body}</p>
+                </div>
+              ))}
+            </Panel>
+          )}
 
           <Panel>
             <h2 className="text-[24px]">About {s.name}</h2>

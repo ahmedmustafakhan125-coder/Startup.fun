@@ -1,4 +1,4 @@
-import { explorerTx, stageLabel, useTxStage } from '../chain/client'
+import { explorerTx, LIVE, stageLabel, useTxStage } from '../chain/client'
 import { Link } from 'react-router-dom'
 import { Coin } from '../components/Coin'
 import { Change, coinTone } from '../components/StartupRow'
@@ -22,7 +22,7 @@ export default function Portfolio() {
         <PageHead title="Portfolio" />
         <Empty
           title="Connect a wallet to see your positions"
-          body="The demo wallet comes with demo USDC and three positions, including one refund you can claim."
+          body={LIVE ? 'Your devnet USDC and the tokens you hold show here once a wallet is connected.' : 'The demo wallet comes with demo USDC and three positions, including one refund you can claim.'}
           action={
             <button className="btn btn-lime" onClick={() => openConnect(true)}>
               Connect wallet

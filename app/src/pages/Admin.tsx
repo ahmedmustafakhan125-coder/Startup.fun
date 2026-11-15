@@ -9,7 +9,7 @@ import { Icon, Modal, PageHead, Panel, StatusBadge, cx } from '../components/ui'
 import { REVIEW_MAX_DAYS, REVIEW_MIN_DAYS, WINDDOWN_DAYS } from '../config'
 import { ago, compact, dateLabel, dateLong, dayMs, daysBetween, isoDay, shortAddr, usd, usdCompact } from '../lib/format'
 import { useStore, useUi } from '../store/useStore'
-import type { Application } from '../store/types'
+import type { Application, Flag, Heartbeat } from '../store/types'
 
 const statusBadge = (a: Application) =>
   ({
@@ -44,7 +44,11 @@ export default function Admin() {
   const toast = useUi(u => u.toast)
   const nav = useNavigate()
   const [range, setRange] = useState(30)
-  const [tab, setTab] = useState<'waiting' | 'scheduled' | 'closed'>('waiting')
+  const [tab, setTab] = useState<'waiting' | 'scheduled' | 'closed' | 'flagged'>('waiting')
+  const flags = useStore(st => st.flags)
+  // Live mode: an override needs a written reason, collected in a dialog.
+  const [override, setOverride] = useState<{ id: string; name: string; hb: Heartbeat } | null>(null)
+  const [overrideReason, setOverrideReason] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
   const [when, setWhen] = useState('')
   const [reason, setReason] = useState('')
@@ -142,17 +146,19 @@ export default function Admin() {
           <p className="mt-1 text-ink2">Founders are promised an answer in {REVIEW_MIN_DAYS} to {REVIEW_MAX_DAYS} days.</p>
         </div>
         <div className="flex gap-2">
-          {(['waiting', 'scheduled', 'closed'] as const).map(k => (
+          {(LIVE ? (['waiting', 'scheduled', 'closed', 'flagged'] as const) : (['waiting', 'scheduled', 'closed'] as const)).map(k => (
             <button key={k} className="chip capitalize" data-on={tab === k} onClick={() => setTab(k)}>
               {k}
-              <span className="text-ink3">{lists[k].length}</span>
+              <span className="text-ink3">{k === 'flagged' ? flags.filter(f => !f.resolvedAt).length : lists[k].length}</span>
             </button>
           ))}
         </div>
       </div>
       <div className="glass overflow-hidden">
-        {lists[tab].length === 0 && <p className="m-0 px-6 py-8 text-ink2">Nothing here right now.</p>}
-        {lists[tab].map(a => {
+        {tab === 'flagged' && flags.length === 0 && <p className="m-0 px-6 py-8 text-ink2">No disagreements between the rule checks and the AI review.</p>}
+        {tab === 'flagged' && flags.map(f => <FlagRow key={f.id} flag={f} />)}
+        {tab !== 'flagged' && lists[tab].length === 0 && <p className="m-0 px-6 py-8 text-ink2">Nothing here right now.</p>}
+        {(tab === 'flagged' ? [] : lists[tab]).map(a => {
           const [cls, word] = statusBadge(a)
           return (
             <div key={a.id} className="row-line grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-5 gap-y-3 px-4 py-4 first:border-t-0 sm:px-6 lg:grid-cols-[minmax(0,1.5fr)_130px_150px_130px_100px_auto]">
@@ -251,14 +257,26 @@ export default function Admin() {
               )}
               {s.phase === 'live' &&
                 (s.heartbeat === 'green' ? (
-                  <button className="btn btn-danger btn-sm" onClick={() => adminSetHeartbeat(s.id, 'red')}>
+                  <button className="btn btn-danger btn-sm" onClick={() => (LIVE ? setOverride({ id: s.id, name: s.name, hb: 'red' }) : adminSetHeartbeat(s.id, 'red'))}>
                     Mark silent
                   </button>
                 ) : (
-                  <button className="btn btn-glass btn-sm" onClick={() => adminSetHeartbeat(s.id, 'green')}>
+                  <button className="btn btn-glass btn-sm" onClick={() => (LIVE ? setOverride({ id: s.id, name: s.name, hb: 'green' }) : adminSetHeartbeat(s.id, 'green'))}>
                     Mark alive
                   </button>
                 ))}
+              {s.phase === 'live' && s.override && (
+                <button
+                  className="btn btn-glass btn-sm"
+                  title={s.overrideReason ?? undefined}
+                  onClick={async () => {
+                    const r = await adminSetHeartbeat(s.id, null)
+                    toast(r.ok ? { tone: 'ok', title: `Override cleared for ${s.name}`, body: 'The next heartbeat run decides.' } : { tone: 'error', title: 'Could not clear the override', body: r.error })
+                  }}
+                >
+                  Clear override
+                </button>
+              )}
               {s.phase === 'wound_down' && <span className="px-2 text-sm text-ink3">Closed</span>}
             </div>
             <div className="col-span-2 md:hidden">
@@ -286,33 +304,36 @@ export default function Admin() {
         })}
       </div>
 
-      <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/[.08] p-5">
-        <div>
-          <div className="font-semibold">Reset the demo data</div>
-          <div className="text-sm text-ink2">Restores the sample startups, queue, balances and month 0. Your changes in this browser are lost.</div>
-        </div>
-        {confirmReset ? (
-          <div className="flex gap-2">
-            <button
-              className="btn btn-danger btn-sm"
-              onClick={() => {
-                resetDemo()
-                setConfirmReset(false)
-                toast({ tone: 'ok', title: 'Demo data reset' })
-              }}
-            >
-              Yes, reset
-            </button>
-            <button className="btn btn-glass btn-sm" onClick={() => setConfirmReset(false)}>
-              Keep my changes
-            </button>
+      {/* Live mode has no sample data to restore. */}
+      {!LIVE && (
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/[.08] p-5">
+          <div>
+            <div className="font-semibold">Reset the demo data</div>
+            <div className="text-sm text-ink2">Restores the sample startups, queue, balances and month 0. Your changes in this browser are lost.</div>
           </div>
-        ) : (
-          <button className="btn btn-glass btn-sm" onClick={() => setConfirmReset(true)}>
-            Reset demo data
-          </button>
-        )}
-      </div>
+          {confirmReset ? (
+            <div className="flex gap-2">
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => {
+                  resetDemo()
+                  setConfirmReset(false)
+                  toast({ tone: 'ok', title: 'Demo data reset' })
+                }}
+              >
+                Yes, reset
+              </button>
+              <button className="btn btn-glass btn-sm" onClick={() => setConfirmReset(false)}>
+                Keep my changes
+              </button>
+            </div>
+          ) : (
+            <button className="btn btn-glass btn-sm" onClick={() => setConfirmReset(true)}>
+              Reset demo data
+            </button>
+          )}
+        </div>
+      )}
 
       <Modal open={!!app} onClose={() => setOpenId(null)} title={app ? `Review ${app.name}` : ''} wide>
         {app && (
@@ -443,6 +464,64 @@ export default function Admin() {
           </div>
         )}
       </Modal>
+      <Modal open={!!override} onClose={() => setOverride(null)} title={override ? `Mark ${override.name} ${override.hb === 'red' ? 'silent' : 'alive'}` : ''}>
+        <p className="mb-4 text-ink2">This overrides the automatic checks until you clear it. The reason is kept in the audit log.</p>
+        <label className="label" htmlFor="override-reason">
+          Reason
+        </label>
+        <textarea id="override-reason" className="input" rows={3} value={overrideReason} onChange={e => setOverrideReason(e.target.value)} />
+        <button
+          className="btn btn-lime mt-4 w-full"
+          disabled={overrideReason.trim().length < 8}
+          onClick={async () => {
+            if (!override) return
+            const r = await adminSetHeartbeat(override.id, override.hb, overrideReason.trim())
+            toast(r.ok ? { tone: 'ok', title: `${override.name} marked ${override.hb === 'red' ? 'silent' : 'alive'}` } : { tone: 'error', title: 'The override was not saved', body: r.error })
+            if (r.ok) {
+              setOverride(null)
+              setOverrideReason('')
+            }
+          }}
+        >
+          Save override
+        </button>
+      </Modal>
+    </div>
+  )
+}
+
+/** One disagreement between the rule checks and the AI review, with the admin's decision. */
+function FlagRow({ flag }: { flag: Flag }) {
+  const { toast } = useUi()
+  const [note, setNote] = useState('')
+  return (
+    <div className="row-line px-4 py-4 first:border-t-0 sm:px-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <Coin label={flag.ticker} size={36} />
+        <span className="font-semibold">{flag.ticker}</span>
+        <span className="text-ink2">
+          Rule checks are {flag.ruleVerdict}, the AI review says {flag.aiVerdict} ({flag.score} of 100)
+        </span>
+        <span className="text-sm text-ink3">{ago(flag.createdAt)}</span>
+      </div>
+      {flag.reasons.length > 0 && <p className="mb-0 mt-2 text-[15px] text-ink2">{flag.reasons.join(' ')}</p>}
+      {flag.resolvedAt ? (
+        <p className="mb-0 mt-2 text-[15px] text-ink3">Resolved: {flag.resolution}</p>
+      ) : (
+        <div className="mt-3 flex flex-wrap gap-2">
+          <input className="input min-w-0 flex-1" aria-label={`Decision for ${flag.ticker}`} placeholder="What you checked and decided" value={note} onChange={e => setNote(e.target.value)} />
+          <button
+            className="btn btn-lime btn-sm"
+            disabled={note.trim().length < 3}
+            onClick={async () => {
+              const r = await useStore.getState().resolveFlag(flag.id, note.trim())
+              toast(r.ok ? { tone: 'ok', title: `Flag on ${flag.ticker} resolved` } : { tone: 'error', title: 'Could not resolve the flag', body: r.error })
+            }}
+          >
+            Resolve
+          </button>
+        </div>
+      )}
     </div>
   )
 }

@@ -3,10 +3,10 @@ import { createKeyPairSignerFromPrivateKeyBytes, type KeyPairSigner } from '@sol
 import type { FastifyInstance } from 'fastify'
 import { randomBytes } from 'node:crypto'
 import { type AppDeps, buildApp } from '../src/app.ts'
-import type { Chain } from '../src/chain.ts'
+import type { Chain, LiveStartup } from '../src/chain.ts'
 import type { Checks } from '../src/checks.ts'
 import { createDb, type Db } from '../src/db.ts'
-import { loadEnv } from '../src/env.ts'
+import { type Env, loadEnv } from '../src/env.ts'
 
 /** A fresh in-memory database with every migration applied. */
 export async function testDb(): Promise<Db> {
@@ -32,27 +32,41 @@ export function mockChecks(failing = new Set<string>()): Checks {
 /** A chain that accepts the fee signature "paid" and records what the operator was asked to send. */
 export function fakeChain() {
   const sent: string[] = []
+  /** What the chain says is Live. Tests add to this; report_heartbeat updates it. */
+  const live: LiveStartup[] = []
   const chain: Chain = {
+    monthSeconds: 300,
+    liveStartups: async () => live.map(l => ({ ...l })),
+    reportHeartbeat: async (ticker, green) => {
+      sent.push(`heartbeat ${ticker} ${green ? 'green' : 'red'}`)
+      const entry = live.find(l => l.ticker === ticker)!
+      entry.green = green
+      if (green) entry.lastBeat = Math.floor(Date.now() / 1000)
+      return 'sig-heartbeat'
+    },
     verifyFee: async signature => (signature.startsWith('paid') ? null : 'That transaction does not pay the verification fee for this application.'),
     listStartup: async args => {
       sent.push(`list ${args.ticker}`)
       return { signature: 'sig-list', address: `address-${args.ticker}`, mint: `mint-${args.ticker}` }
     },
+    signaturesSince: async () => [],
+    logsOf: async () => null,
+    tickerOf: async () => null,
     closeRaise: async ticker => {
       sent.push(`close ${ticker}`)
       return 'sig-close'
     },
   }
-  return { chain, sent }
+  return { chain, sent, live }
 }
 
-export async function testApp(overrides: Partial<AppDeps> = {}) {
+export async function testApp(overrides: Partial<Omit<AppDeps, 'env'>> & { env?: Partial<Env> } = {}) {
   const admin = await wallet()
   const db = overrides.db ?? (await testDb())
   const env = { ...loadEnv({ SESSION_SECRET: SECRET, ADMIN_WALLETS: admin.address }), ...overrides.env }
-  const { chain, sent } = fakeChain()
-  const deps = { db, env, chain, checks: mockChecks(), ...overrides }
-  return { app: buildApp(deps), deps, db, admin, sent }
+  const { chain, sent, live } = fakeChain()
+  const deps = { db, chain, checks: mockChecks(), ...overrides, env }
+  return { app: buildApp(deps), deps, db, admin, sent, live }
 }
 
 export const wallet = () => createKeyPairSignerFromPrivateKeyBytes(new Uint8Array(randomBytes(32)))

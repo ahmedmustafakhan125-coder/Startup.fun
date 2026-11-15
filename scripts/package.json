@@ -7,7 +7,8 @@
   "scripts": {
     "init": "tsx init.ts",
     "seed": "tsx seed.ts",
-    "demo": "tsx demo.ts"
+    "demo": "tsx demo.ts",
+    "walkthrough": "tsx walkthrough.ts"
   },
   "dependencies": {
     "@solana-program/compute-budget": "^0.20.0",

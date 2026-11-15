@@ -2,6 +2,8 @@ import Fastify, { type FastifyInstance } from 'fastify'
 import { applicationRoutes, type Deps } from './applications.ts'
 import { authRoutes } from './auth.ts'
 import { githubRoutes } from './github.ts'
+import { marketRoutes } from './market.ts'
+import { startupRoutes } from './startups.ts'
 
 export interface AppDeps extends Deps {
   /** `true` logs to stdout; a stream captures the log (tests). */
@@ -25,6 +27,8 @@ export function buildApp({ logger = false, ...deps }: AppDeps): FastifyInstance 
   authRoutes(app, deps)
   githubRoutes(app, deps)
   applicationRoutes(app, deps)
+  startupRoutes(app, deps)
+  marketRoutes(app, deps)
 
   app.get('/health', async (_req, reply): Promise<HealthResponse> => {
     let dbOk = true

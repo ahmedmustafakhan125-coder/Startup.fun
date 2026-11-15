@@ -21,7 +21,7 @@ import {
 import { LIVE } from '../chain/client'
 import { dayMs, isoDay } from '../lib/format'
 import { liveActions, liveSeed } from './live'
-import type { Application, DayStat, Draft, Heartbeat, Holding, Result, Startup, Trade } from './types'
+import type { Application, DayStat, Draft, Flag, Heartbeat, Holding, Result, Startup, Trade } from './types'
 
 // This store is the whole "backend" for now. Every action below maps to one
 // program instruction or API call later, so pages never touch the data directly.
@@ -89,6 +89,8 @@ export interface Data {
   wallet: Wallet
   holdings: Record<string, Holding>
   draft: Draft
+  /** Live mode: disagreements between the rule checks and the AI review, for admins. */
+  flags: Flag[]
 }
 
 // Money actions return a promise in live mode, where they wait for the wallet and the network.
@@ -114,7 +116,11 @@ export interface Actions {
   adminReject: (appId: string, reason: string) => Async<Result>
   adminListNow: (appId: string) => Async<Result>
   adminCloseRaise: (id: string) => Async<Result>
-  adminSetHeartbeat: (id: string, hb: Heartbeat) => void
+  /** Live mode needs a written reason; `null` clears the override. */
+  adminSetHeartbeat: (id: string, hb: Heartbeat | null, reason?: string) => Async<Result>
+  resolveFlag: (id: number, resolution: string) => Async<Result>
+  /** Live mode: the founder's monthly progress note. */
+  postUpdate: (id: string, body: string) => Async<Result>
   adminAdvanceMonth: () => string[]
   founderClaimTreasury: (id: string) => Async<Result>
   founderClaimFees: (id: string) => Async<Result>
@@ -135,6 +141,7 @@ const seed = (): Data => {
     wallet: { address: null, kind: null, usdc: 12_400 },
     holdings: seedHoldings(startups),
     draft: emptyDraft(),
+    flags: [],
   }
 }
 
@@ -506,23 +513,28 @@ export const useStore = create<Data & Actions>()(
           return { ok: true }
         },
 
-        adminSetHeartbeat: (id, hb) =>
-          patchStartup(id, s => ({
-            ...s,
-            heartbeat: hb,
-            redDays: hb === 'green' ? 0 : Math.max(1, s.redDays),
-            lastBeat: hb === 'green' ? Date.now() : s.lastBeat,
-            beats: [...s.beats.slice(1), hb === 'green' ? 1 : 0],
-            checks:
-              hb === 'green'
-                ? Object.fromEntries(
-                    Object.entries(s.checks).map(([k, c]) => [k, c.status === 'failed' ? { status: 'passed', detail: 'Back online and passing', checkedAt: Date.now() } : c]),
-                  ) as Startup['checks']
-                : {
-                    ...s.checks,
-                    domain: { status: 'failed', detail: `${s.website} did not respond to the last check`, checkedAt: Date.now() },
-                  },
-          })),
+        resolveFlag: () => ({ ok: true }),
+        postUpdate: () => ({ ok: true }),
+        adminSetHeartbeat: (id, hb) => {
+          if (hb)
+            patchStartup(id, s => ({
+              ...s,
+              heartbeat: hb,
+              redDays: hb === 'green' ? 0 : Math.max(1, s.redDays),
+              lastBeat: hb === 'green' ? Date.now() : s.lastBeat,
+              beats: [...s.beats.slice(1), hb === 'green' ? 1 : 0],
+              checks:
+                hb === 'green'
+                  ? Object.fromEntries(
+                      Object.entries(s.checks).map(([k, c]) => [k, c.status === 'failed' ? { status: 'passed', detail: 'Back online and passing', checkedAt: Date.now() } : c]),
+                    ) as Startup['checks']
+                  : {
+                      ...s.checks,
+                      domain: { status: 'failed', detail: `${s.website} did not respond to the last check`, checkedAt: Date.now() },
+                    },
+            }))
+          return { ok: true }
+        },
 
         // The demo clock. One call is one month for every live startup.
         adminAdvanceMonth: () => {
@@ -597,7 +609,7 @@ export const useStore = create<Data & Actions>()(
 
         resetDemo: () => set({ ...seed() }),
         refresh: async () => {},
-        ...(LIVE ? liveActions(set, get, addTrade) : {}),
+        ...(LIVE ? liveActions(set, get) : {}),
       }
     },
     {

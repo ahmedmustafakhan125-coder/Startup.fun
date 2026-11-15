@@ -97,6 +97,8 @@ model Startup {
   /// green | red while an admin override holds, otherwise null.
   override       String?
   overrideReason String?
+  /// Fees the founder has claimed in total, from FeesClaimed events (base units).
+  feesClaimed    BigInt   @default(0)
 
   @@map("startups")
 }

@@ -1,6 +1,6 @@
 // Reads program state from devnet and shapes it into the objects the pages already render.
-// Profiles (name, tagline, links, checks) come from the backend; volume, backers and price
-// history need the indexer (Phase 8) and stay empty.
+// Balances and phases come from the chain; profiles, checks and the indexed market numbers
+// (volume, backers, price history) come from the backend.
 import { findAssociatedTokenPda, TOKEN_PROGRAM_ADDRESS } from '@solana-program/token'
 import { type Address, type Base58EncodedBytes, getBase58Decoder } from '@solana/kit'
 import {
@@ -104,6 +104,17 @@ const blankProfile = (ticker: string): Profile => ({
   social: '',
   founders: [],
   listedAt: 0,
+  history: [],
+  openPrice24h: null,
+  volume24h: 0,
+  volumeTotal: 0,
+  backers: 0,
+  feesClaimedTotal: 0,
+  beats: Array<number>(14).fill(1),
+  updates: [],
+  aiReview: null,
+  override: null,
+  overrideReason: null,
   checks: { kyc: notChecked, domain: notChecked, github: notChecked, socials: notChecked, founder: notChecked },
 })
 
@@ -132,11 +143,9 @@ function toStartup(c: ChainStartup, config: Config, balance: Record<string, bigi
     // One on-chain "month" stands for 30 days, so the wind-down wait shows as 60 days.
     redDays: Math.min(WINDDOWN_DAYS, Math.floor((redSeconds / month) * 30)),
     lastBeat: Number(c.lastBeat) * 1000,
-    beats: Array<number>(14).fill(red ? 0 : 1),
     raiseTarget,
     raised,
     salePrice,
-    backers: 0,
     poolUsdc,
     poolTokens,
     circulating: c.phase === Phase.Raising ? ui(c.tokensSold) : ui(balance.supply - (live ? locked : 0n)),
@@ -147,15 +156,13 @@ function toStartup(c: ChainStartup, config: Config, balance: Record<string, bigi
     feeVault: ui(balance.feeVault),
     feeCap: ui(c.feeCap),
     feesClaimedThisMonth: BigInt(period) > c.lastFeePeriod ? 0 : ui(c.feesClaimedThisPeriod),
-    feesClaimedTotal: 0,
     holderReserve: ui(balance.reserve),
     vestMonths: Math.max(0, Math.floor(greenSeconds / month)),
     founderClaimed: ui(c.founderClaimed),
     founderBurned: c.phase === Phase.WoundDown,
-    volume24h: 0,
-    volumeTotal: 0,
-    history: [salePrice, current],
-    openPrice24h: current,
+    // The indexed series can trail the chain by a few seconds, so it always ends at the current price.
+    history: [salePrice, ...profile.history.slice(1, -1), current],
+    openPrice24h: profile.openPrice24h ?? current,
     refundPool: ui(balance.refund),
     refundPerToken,
     woundDownAt: undefined,
@@ -171,7 +178,7 @@ export interface Snapshot {
 }
 
 /** Every startup on-chain plus, when a wallet is connected, its USDC and token balances. */
-export async function loadChain(owner: Address | null, previous: Record<string, Holding>, profiles: Profile[]): Promise<Snapshot> {
+export async function loadChain(owner: Address | null, profiles: Profile[], positions: Record<string, Holding>): Promise<Snapshot> {
   const { config } = await getCtx()
   const accounts = await rpc
     .getProgramAccounts(OBVERSE_PROGRAM_ADDRESS, {
@@ -211,16 +218,9 @@ export async function loadChain(owner: Address | null, previous: Record<string, 
     const s = startups.find(x => x.ticker === c.data.ticker)!
     const tokens = ui(held[i])
     if (tokens <= 0) return
-    // Cost basis comes from the indexer in Phase 8. Until then: keep what this browser has seen,
-    // and value anything new at the current price.
-    const before = previous[s.id]
-    const price = s.history[s.history.length - 1]
-    const cost = !before
-      ? tokens * price
-      : tokens <= before.tokens
-        ? before.cost * (tokens / before.tokens)
-        : before.cost + (tokens - before.tokens) * price
-    holdings[s.id] = { tokens, cost }
+    // The balance is the chain's; the cost is what the indexed trades say was paid for it.
+    // Tokens that were never bought (a founder's unlocked allocation) have no cost.
+    holdings[s.id] = { tokens, cost: positions[s.id]?.cost ?? 0 }
   })
   return { startups, usdc: ui(usdc), holdings }
 }

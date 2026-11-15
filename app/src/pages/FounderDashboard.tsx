@@ -49,6 +49,38 @@ function Timeline({ a }: { a: Application }) {
   )
 }
 
+/** Live mode: the monthly progress note. Posting one each month is one of the four heartbeat checks. */
+function UpdateForm({ s }: { s: Startup }) {
+  const { toast } = useUi()
+  const [body, setBody] = useState('')
+  const [busy, setBusy] = useState(false)
+  const post = async () => {
+    setBusy(true)
+    const r = await useStore.getState().postUpdate(s.id, body.trim())
+    setBusy(false)
+    if (!r.ok) return toast({ tone: 'error', title: 'The update was not posted', body: r.error })
+    toast({ tone: 'ok', title: 'Update posted', body: 'It shows on your startup page and counts for this month.', coin: s.ticker })
+    setBody('')
+  }
+  return (
+    <div className="mt-6 border-t border-white/[.07] pt-6">
+      <label className="label" htmlFor={`update-${s.id}`}>
+        Post monthly update
+      </label>
+      <textarea id={`update-${s.id}`} className="input" rows={3} maxLength={4000} placeholder="What did you ship this month? Holders read this." value={body} onChange={e => setBody(e.target.value)} />
+      <button className="btn btn-lime btn-sm mt-3" disabled={busy || body.trim().length < 20} onClick={post}>
+        {busy ? 'Posting' : 'Post update'}
+      </button>
+      {(s.updates ?? []).map(u => (
+        <div key={u.id} className="mt-4 border-t border-white/[.06] pt-4">
+          <div className="text-sm text-ink3">Posted {ago(u.createdAt)}</div>
+          <p className="mb-0 mt-1.5 whitespace-pre-wrap text-[15px] text-ink2">{u.body}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /** Live mode: which on-chain period the startup is in and when budgets reset. Replaces the demo clock. */
 function PeriodClock({ s }: { s: Startup }) {
   const [now, setNow] = useState(Date.now())
@@ -199,9 +231,10 @@ function MyStartup({ s }: { s: Startup }) {
                 <Beats beats={s.beats} />
               </div>
               <div className="mt-3 text-[15px] text-ink2">Last passed {ago(s.lastBeat)}.</div>
-              <div className="mt-1 text-sm text-ink3">Demo clock is at month {month}. Advance it from Admin.</div>
+              {!LIVE && <div className="mt-1 text-sm text-ink3">Demo clock is at month {month}. Advance it from Admin.</div>}
             </div>
           </div>
+          {LIVE && <UpdateForm s={s} />}
         </>
       )}
 

@@ -20,6 +20,8 @@ for (const [i, s] of samples.entries()) {
   const profile = {
     name: s.name, tagline: s.tagline, about: s.about, category: s.category, country: s.country,
     website: s.website, github: s.github, social: s.social, founders: JSON.stringify(s.founders),
+    // The samples have no real site or repository to check, so their heartbeat is pinned by an override.
+    override: s.heartbeat, overrideReason: 'Sample startup: nothing real to check',
   }
   await db.startup.upsert({
     where: { ticker: s.ticker },
