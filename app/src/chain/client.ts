@@ -18,7 +18,10 @@ import { createRpc, OBVERSE_PROGRAM_ADDRESS } from '../../../sdk/src/index.ts'
 export const LIVE = import.meta.env.VITE_DATA_SOURCE === 'live'
 
 const RPC_URL = import.meta.env.VITE_RPC_URL || 'https://api.devnet.solana.com'
-if (LIVE && import.meta.env.VITE_PROGRAM_ID && import.meta.env.VITE_PROGRAM_ID !== OBVERSE_PROGRAM_ADDRESS)
+// A value pasted into a hosting dashboard can pick up spaces, quotes or backticks. Only the
+// address characters are compared, so a stray character does not take the whole site down.
+const configuredProgram = (import.meta.env.VITE_PROGRAM_ID ?? '').replace(/[^1-9A-HJ-NP-Za-km-z]/g, '')
+if (LIVE && configuredProgram && configuredProgram !== OBVERSE_PROGRAM_ADDRESS)
   throw new Error('VITE_PROGRAM_ID does not match the generated client. Run `npm run generate` in sdk/.')
 
 export const rpc = createRpc(RPC_URL)
