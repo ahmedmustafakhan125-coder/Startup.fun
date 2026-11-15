@@ -56,7 +56,7 @@ function Money({ s }: { s: Startup }) {
         </Vault>
         <Vault icon="lock" title="Founder tokens" amount={s.founderBurned ? 'Burned' : compact(SUPPLY.founders - s.founderClaimed)}>
           {s.founderBurned ? (
-            <>The locked allocation was burned at wind-down.</>
+            <>The locked allocation was burned when it wound down.</>
           ) : (
             <>
               <Progress value={lockProgress} tone="lime" marker={CLIFF_MONTHS / (CLIFF_MONTHS + VEST_MONTHS)} />
@@ -207,7 +207,7 @@ export default function StartupPage() {
               <div>
                 <h2 className="text-[24px]">Verification</h2>
                 <p className="mt-1.5 text-ink2">
-                  {passing} of 5 checks passing. These re-run on a schedule, not only at listing.
+                  {passing} of 5 checks passing. These run again on a schedule, not only at listing.
                 </p>
               </div>
               <div className="text-right">

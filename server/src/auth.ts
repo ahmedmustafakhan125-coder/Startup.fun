@@ -66,7 +66,7 @@ export function authRoutes(app: FastifyInstance, { db, env }: { db: Db; env: Env
         return reply.code(400).send({ error: 'InvalidAddress', message: 'That is not a wallet address.' })
       }
       for (const [key, nonce] of nonces) if (nonce.expires < Date.now()) nonces.delete(key)
-      if (nonces.size >= MAX_PENDING_NONCES) return reply.code(503).send({ error: 'Busy', message: 'Too many sign-ins at once. Try again in a few minutes.' })
+      if (nonces.size >= MAX_PENDING_NONCES) return reply.code(503).send({ error: 'Busy', message: 'Too many wallets are signing in at once. Try again in a few minutes.' })
       const message = `Sign in to Obverse (devnet)\nWallet: ${wallet}\nNonce: ${randomBytes(16).toString('hex')}`
       nonces.set(wallet, { message, expires: Date.now() + NONCE_MS })
       return { message }

@@ -80,6 +80,31 @@ export function marketRoutes(app: FastifyInstance, { db, env }: Deps) {
     return { positions, trades: trades.slice(-80).reverse().map(tradeView) }
   })
 
+  /** The 50 wallets that traded the most through the pools. Raise commits are not pool volume, so they do not count. */
+  app.get('/leaderboard', async () => {
+    const groups = await db.trade.groupBy({ by: ['wallet', 'ticker', 'side'], where: { side: { not: 'commit' } }, _sum: { usdc: true, fee: true }, _count: { _all: true } })
+    const board = new Map<string, { volume: bigint; trades: number; tickers: Map<string, bigint> }>()
+    for (const g of groups) {
+      // Same measure as `marketOf`: the payment on a buy, payout plus fee on a sell.
+      const volume = (g._sum.usdc ?? 0n) + (g.side === 'sell' ? (g._sum.fee ?? 0n) : 0n)
+      const row = board.get(g.wallet) ?? { volume: 0n, trades: 0, tickers: new Map<string, bigint>() }
+      row.volume += volume
+      row.trades += g._count._all
+      row.tickers.set(g.ticker, (row.tickers.get(g.ticker) ?? 0n) + volume)
+      board.set(g.wallet, row)
+    }
+    return [...board]
+      .sort(([, a], [, b]) => (b.volume > a.volume ? 1 : b.volume < a.volume ? -1 : 0))
+      .slice(0, 50)
+      .map(([wallet, row]) => ({
+        wallet,
+        volume: ui(row.volume),
+        trades: row.trades,
+        /** The startup this wallet traded most. */
+        top: [...row.tickers].sort(([, a], [, b]) => (b > a ? 1 : b < a ? -1 : 0))[0]![0].toLowerCase(),
+      }))
+  })
+
   /** Volume and platform revenue by source per day, oldest first, with empty days filled in. */
   app.get<{ Querystring: { range?: number } }>(
     '/admin/stats',

@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { AreaChart, SplitBar } from '../components/Charts'
 import { Coin } from '../components/Coin'
 import { Globe, groupByCountry } from '../components/Globe'
+import { HowItWorks } from '../components/HowItWorks'
 import { Change, StartupRow, coinTone } from '../components/StartupRow'
-import { Icon, Panel, Progress, StatusBadge, cx } from '../components/ui'
-import { FEE, REVIEW_MAX_DAYS, REVIEW_MIN_DAYS, WINDDOWN_DAYS } from '../config'
+import { Panel, Progress, StatusBadge, cx } from '../components/ui'
+import { FEE, WINDDOWN_DAYS } from '../config'
 import { change24h, mcapOf, priceOf } from '../lib/curve'
 import { pctPlain, price, usdCompact } from '../lib/format'
 import { useStore } from '../store/useStore'
@@ -14,7 +15,7 @@ const outcomes = {
   alive: [
     ['Raise treasury', 'Releases this month’s budget to the founders'],
     ['Trading fees', 'Founders claim up to their monthly cap'],
-    ['Founder tokens', 'Keep unlocking after the 12-month lock'],
+    ['Founder tokens', 'Keep unlocking after the 12 month lock'],
   ],
   silent: [
     ['Raise treasury', 'Unspent balance is refunded to holders'],
@@ -146,6 +147,8 @@ export default function Home() {
         </dl>
       </Panel>
 
+      <HowItWorks />
+
       {/* Where they are building */}
       <section className="mt-20">
         <div className="mb-2 flex flex-wrap items-end justify-between gap-4">
@@ -271,30 +274,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* The path */}
-      <section className="mt-20">
-        <h2 className="mb-5 text-[30px] sm:text-[38px]" style={{ fontStretch: '85%' }}>From application to trading</h2>
-        <ol className="m-0 grid list-none gap-4 p-0 md:grid-cols-4">
-          {[
-            ['shield', 'Apply and verify', 'Founders pass identity checks and prove they control the domain, the code and the social accounts.'],
-            ['calendar', `Review, ${REVIEW_MIN_DAYS} to ${REVIEW_MAX_DAYS} days`, 'A reviewer reads the application and the automated results, then schedules or rejects the listing.'],
-            ['vault', 'Raise into escrow', 'Backers buy at one fixed price. 80% of proceeds lock in the treasury and 20% becomes trading liquidity.'],
-            ['pulse', 'Trade, with a heartbeat', 'The same checks keep re-running. Passing keeps the money flowing. Silence pauses it, then refunds it.'],
-          ].map(([icon, title, body], i) => (
-            <li key={title} className="glass-flat p-5">
-              <div className="flex items-center justify-between">
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-white/[.07] text-lime">
-                  <Icon name={icon} size={20} />
-                </span>
-                <span className="font-display text-[34px] font-semibold leading-none text-white/15">{i + 1}</span>
-              </div>
-              <h3 className="mt-4 text-[19px]">{title}</h3>
-              <p className="mt-2 text-[15px] text-ink2">{body}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
 
       {/* Fee split */}
       <section className="mt-20 grid items-start gap-8 lg:grid-cols-[.8fr_1.2fr]">

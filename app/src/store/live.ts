@@ -9,6 +9,7 @@ import { exactBalance, loadChain, type Ref, refOf } from '../chain/read'
 import { buyTx, claimFeesTx, claimFounderTokensTx, claimRefundTx, claimTreasuryTx, commitTx, faucetTx, payVerificationFeeTx, sellTx, toBase } from '../chain/tx'
 import { DEMO_AIRDROP, VERIFICATION_FEE } from '../config'
 import { claimableFees, claimableTreasury, founderClaimable, quoteBuy, quoteSell } from '../lib/curve'
+import { rankTraders } from '../lib/leaderboard'
 import type { Draft, Result } from './types'
 import { type Actions, type Data, emptyDraft } from './useStore'
 
@@ -32,6 +33,7 @@ export const liveSeed = (data: Data): Data => ({
   trades: [],
   holdings: {},
   wallet: { address: null, kind: null, usdc: 0 },
+  adminWallet: false,
 })
 
 export function liveActions(
@@ -42,9 +44,10 @@ export function liveActions(
     const owner = get().wallet.address as Address | null
     setApiWallet(owner)
     // The server is optional for reading: without it startups still load, with blank profiles.
-    const [profiles, trades, positions, me] = await Promise.all([
+    const [profiles, trades, leaders, positions, me] = await Promise.all([
       api.startups().catch(() => []),
       api.trades().catch(() => []),
+      api.leaderboard().catch(() => null),
       owner ? api.positions(owner).then(p => p.positions).catch(() => ({})) : {},
       owner ? api.me() : null,
     ])
@@ -62,7 +65,10 @@ export function liveActions(
       wallet: { ...st.wallet, usdc: snapshot.usdc },
       applications: applications.map(a => ({ ...a, mine: a.wallet === owner })),
       flags,
+      adminWallet: signedIn && me.admin,
       trades: trades.map(t => ({ ...t, mine: t.wallet === owner })),
+      // Without the server's ranking, rank the wallets in the latest trades.
+      leaders: leaders ?? rankTraders(trades),
       daily: daily.length ? daily : emptyDays(),
     }))
   }
@@ -127,7 +133,7 @@ export function liveActions(
       })()
     },
     disconnect: () => {
-      set({ wallet: { kind: null, address: null, usdc: 0 }, holdings: {}, applications: [], flags: [] })
+      set({ wallet: { kind: null, address: null, usdc: 0 }, holdings: {}, applications: [], flags: [], adminWallet: false })
       setApiWallet(null)
       void api.logout()
     },

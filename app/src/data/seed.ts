@@ -222,15 +222,15 @@ export function seedStartups(): Startup[] {
     live({
       id: 'lumenroute', country: 'Saudi Arabia', name: 'Lumenroute', ticker: 'LUMN', category: 'Logistics', seed: 37,
       tagline: 'Route planning for delivery fleets of five to fifty vans',
-      about: 'Small fleets plan routes on paper or in consumer map apps. Lumenroute takes the day’s orders, vehicle sizes and driver hours and returns routes that finish on time, then re-plans when a van breaks down.',
-      founders: [{ name: 'Faisal Al-Harbi', role: 'CEO' }, { name: 'Sanne de Groot', role: 'Operations research lead' }],
+      about: 'Small fleets plan routes on paper or in consumer map apps. Lumenroute takes the day’s orders, vehicle sizes and driver hours and returns routes that finish on time, then plans again when a van breaks down.',
+      founders: [{ name: 'Faisal Alharbi', role: 'CEO' }, { name: 'Sanne de Groot', role: 'Operations research lead' }],
       raised: 180_000, mult: 1.35, monthsLive: 5, monthlyBudget: 12_000, feeCap: 2_000, volumeTotal: 1_240_000, volume24h: 18_900, day: -0.034,
     }),
     live({
       id: 'quillstack', country: 'Germany', name: 'Quillstack', ticker: 'QUIL', category: 'Developer tools', seed: 51,
-      tagline: 'Open-source docs engine that tests every code sample on each release',
+      tagline: 'Open source docs engine that tests every code sample on each release',
       about: 'API docs rot because nobody runs the examples. Quillstack executes every snippet in CI against the current release and blocks the publish when one fails. The engine is open source; the hosted runner is the business.',
-      founders: [{ name: 'Mei-Lin Okafor', role: 'Founder and maintainer' }],
+      founders: [{ name: 'Meilin Okafor', role: 'Founder and maintainer' }],
       raised: 90_000, mult: 0.82, monthsLive: 4, monthlyBudget: 6_000, feeCap: 1_000, volumeTotal: 410_000, volume24h: 6_300, day: 0.009,
     }),
     live({
@@ -250,7 +250,7 @@ export function seedStartups(): Startup[] {
     raising({
       id: 'harborloop', country: 'United Arab Emirates', name: 'Harborloop', ticker: 'HRBR', category: 'Fintech',
       tagline: 'Remittances that arrive as mobile money within a minute',
-      about: 'Harborloop settles small cross-border transfers over stablecoin rails and pays out to mobile money wallets. Live on the Dubai to Lahore corridor, raising to license the next two.',
+      about: 'Harborloop settles small international transfers over stablecoin rails and pays out to mobile money wallets. Live on the Dubai to Lahore corridor, raising to license the next two.',
       founders: [{ name: 'Kwabena Mensah', role: 'CEO' }, { name: 'Leila Haddad', role: 'Compliance lead' }],
       target: 300_000, raised: 54_000, monthlyBudget: 18_000, feeCap: 3_000, daysAgo: 2,
     }),
@@ -259,7 +259,7 @@ export function seedStartups(): Startup[] {
   // One startup that already wound down, so the refund path can be seen.
   const dead = live({
     id: 'driftkiln', country: 'Norway', name: 'Driftkiln', ticker: 'DRFT', category: 'Consumer', seed: 83, hb: 'red', redDays: 60,
-    tagline: 'Small-batch ceramics marketplace with kiln time booked by the hour',
+    tagline: 'Small batch ceramics marketplace with kiln time booked by the hour',
     about: 'Driftkiln matched hobby potters with studios that had idle kiln hours. The team stopped shipping in the summer and the listing wound down after 60 silent days.',
     founders: [{ name: 'Oona Halvorsen', role: 'Founder' }],
     raised: 80_000, mult: 0.3, monthsLive: 5, monthlyBudget: 7_000, feeCap: 1_000, volumeTotal: 260_000, volume24h: 0, day: 0,
@@ -314,28 +314,28 @@ export function seedApplications(): Application[] {
   return [
     base({
       id: 'app-1', name: 'Cinderpath', ticker: 'CNDR', founderName: 'Yusuf Demir', country: 'Türkiye', category: 'Logistics',
-      tagline: 'Cold-chain tracking tags that cost less than the box they ride in',
+      tagline: 'Cold chain tracking tags that cost less than the box they ride in',
       about: 'Disposable temperature loggers with a QR readout, sold to regional food distributors.',
       raiseTarget: 140_000, monthlyBudget: 10_000, submittedAt: now - 11 * dayMs, status: 'in_review', checks: chk({}, 'Cinderpath'),
     }),
     base({
       id: 'app-2', name: 'Palewater', ticker: 'PALE', founderName: 'Ingrid Solberg', country: 'Norway', category: 'Health',
-      tagline: 'Shift scheduling for home-care nurses that respects travel time',
-      about: 'Builds weekly rosters for home-care agencies and re-plans the day when a visit overruns.',
+      tagline: 'Shift scheduling for home care nurses that respects travel time',
+      about: 'Builds weekly rosters for home care agencies and plans the day again when a visit overruns.',
       raiseTarget: 200_000, monthlyBudget: 15_000, submittedAt: now - 9 * dayMs, status: 'scheduled', scheduledFor: now + 3 * dayMs, decidedAt: now - 2 * dayMs,
       checks: chk({}, 'Palewater'),
     }),
     base({
       id: 'app-3', name: 'Tessel', ticker: 'TESL', founderName: 'Arjun Mehta', country: 'India', category: 'AI',
-      tagline: 'Turns a product spec into a clickable prototype you can user-test the same day',
-      about: 'Generates working front-end prototypes from written specs and records user-test sessions against them.',
+      tagline: 'Turns a product spec into a clickable prototype you can test with users the same day',
+      about: 'Generates working frontend prototypes from written specs and records user testing sessions against them.',
       raiseTarget: 90_000, monthlyBudget: 7_000, submittedAt: now - 6 * dayMs, status: 'in_review',
       checks: chk({ github: pending('Waiting for the founder to connect the organisation account') }, 'Tessel'),
     }),
     base({
       id: 'app-4', name: 'Brackenfold', ticker: 'BRKN', founderName: 'Chloé Marchand', country: 'France', category: 'Climate',
       tagline: 'Insulation audits from a phone video of the outside of a house',
-      about: 'Estimates heat loss from a walk-around video and prices the retrofit with local installers.',
+      about: 'Estimates heat loss from a phone video of the building and prices the retrofit with local installers.',
       raiseTarget: 110_000, monthlyBudget: 9_000, submittedAt: now - 2 * dayMs, status: 'submitted',
       checks: chk({ domain: failed('No DNS record found on brackenfold.com'), kyc: pending('Identity check in progress') }, 'Brackenfold'),
     }),
@@ -370,8 +370,10 @@ export function seedTrades(startups: Startup[]): Trade[] {
   const liveOnes = startups.filter(s => s.phase === 'live')
   const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
   const addr = () => Array.from({ length: 44 }, () => letters[Math.floor(r() * letters.length)]).join('')
+  // A dozen regulars, some far more active than others, so the leaderboard has an order to it.
+  const traders = Array.from({ length: 12 }, addr)
   const out: Trade[] = []
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 48; i++) {
     const s = liveOnes[Math.floor(r() * liveOnes.length)]
     const p = s.poolUsdc / s.poolTokens
     const usdc = Math.round(40 + r() * r() * 2600)
@@ -383,7 +385,7 @@ export function seedTrades(startups: Startup[]): Trade[] {
       tokens: usdc / p,
       price: p * (1 + (r() - 0.5) * 0.02),
       ts: Date.now() - Math.round((i * 11 + r() * 9) * 60_000),
-      wallet: addr(),
+      wallet: traders[Math.floor(r() * r() * traders.length)],
       mine: false,
     })
   }

@@ -265,6 +265,30 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
 5. **Server hardening added:** pending sign-in nonces are capped at 10,000; the session cookie
    gets `Secure` when `APP_URL` is https.
 
+## After Phase 9: trade page, leaderboard, admin lock (2026-11-15)
+
+Asked for by the owner, outside the phase plan.
+
+- **Trade page at `/trade`.** A market list, the price chart, the existing trade panel and the
+  latest trades for the chosen coin. Open raises are listed too, with the commit form. The chosen
+  coin is kept in `?m=` so switching coins does not reload the page. No new program or pricing code:
+  it calls the same store actions as the startup page.
+- **Leaderboard ranks by pool volume, not profit.** Buys and sells count (a sell counts gross, as
+  in `marketOf`); raise commits do not. Profit would need every wallet's full history and current
+  prices, and volume is exact from the indexed trades. Served by `GET /leaderboard` (top 50,
+  public). If the server has no such route the frontend ranks the latest trades it already has.
+  Mock mode always ranks its own trade list.
+- **`/admin` is behind a password and is no longer in the menu.** The check runs in the browser
+  against a salted, repeated SHA-256 kept in `app/src/lib/adminGate.ts`; the password itself is not
+  in the repo. This only hides the page. In live mode the server still takes admin calls only from
+  a wallet in `ADMIN_WALLETS`, and the page says so when the connected wallet is not one.
+- **Visible copy has no hyphens or dashes.** Wording was changed where a hyphen was removed
+  ("run again", "international"), and two sample founders were renamed.
+- **The four steps on the homepage became a looping animation** (`HowItWorks`). It runs only while
+  on screen, has a pause button, and does not loop for visitors who ask for reduced motion.
+- Mock data now seeds 48 trades from 12 wallets so the leaderboard has an order. The saved demo
+  state key moved to `obverse-demo-v3`, which resets demo changes saved in a browser once.
+
 ## Known limits
 
 - `initialize_config` makes its first caller the admin. Fine while the deploy script calls it
@@ -281,3 +305,6 @@ Choices made where the docs leave an option open. Newest phase at the bottom.
   proxy that serves `/api` the same way.
 - The public devnet RPC endpoint limits requests per IP; everything backs off on HTTP 429.
 - Empty, loading and error states have not been checked by eye in a browser.
+- The admin password check is in the browser, so it keeps the page out of sight but protects
+  nothing by itself. Admin actions are protected by the server's wallet check, in live mode only.
+- The leaderboard has no time window and no paging: it is the top 50 wallets of all time.

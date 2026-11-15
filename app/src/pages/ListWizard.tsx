@@ -150,7 +150,7 @@ export default function ListWizard() {
             <h2 className="text-[24px]">Who is behind it</h2>
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Full name">{input('founderName', { placeholder: 'Ada Lovelace', autoComplete: 'name' })}</Field>
-              <Field label="Role">{input('founderRole', { placeholder: 'CEO and co-founder' })}</Field>
+              <Field label="Role">{input('founderRole', { placeholder: 'CEO and cofounder' })}</Field>
               <Field label="Country" hint="Your startup shows up on the globe here.">
                 <select className="input" value={draft.country} onChange={e => set({ country: e.target.value })}>
                   <option value="">Choose a country</option>
@@ -180,7 +180,7 @@ export default function ListWizard() {
                 </select>
               </Field>
             </div>
-            <Field label="One-line description" hint="Say what the product does and for whom.">{input('tagline', { placeholder: 'Warehouse robots that small sellers can rent by the hour', maxLength: 90 })}</Field>
+            <Field label="Short description" hint="Say what the product does and for whom.">{input('tagline', { placeholder: 'Warehouse robots that small sellers can rent by the hour', maxLength: 90 })}</Field>
             <Field label="About">
               <textarea className="input" rows={4} placeholder="What problem you solve, what exists today, what the raise pays for." value={draft.about} onChange={e => set({ about: e.target.value })} />
             </Field>

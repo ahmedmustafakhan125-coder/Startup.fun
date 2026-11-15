@@ -133,6 +133,15 @@ export interface Trade {
   mine: boolean
 }
 
+/** One row of the traders leaderboard: a wallet and what it moved through the pools. */
+export interface Leader {
+  wallet: string
+  volume: number
+  trades: number
+  /** Id of the startup this wallet traded most. */
+  top: string
+}
+
 export interface DayStat {
   date: string // yyyy-mm-dd
   volume: number

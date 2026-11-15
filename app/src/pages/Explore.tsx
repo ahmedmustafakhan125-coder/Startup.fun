@@ -42,7 +42,7 @@ export default function Explore() {
     <div>
       <PageHead
         title="Explore startups"
-        lead="Every listing passed identity, domain, code and social checks, and those checks keep re-running. The badge shows the latest result."
+        lead="Every listing passed identity, domain, code and social checks, and those checks keep running. The badge shows the latest result."
         right={
           <Link to="/list" className="btn btn-glass">
             List your startup

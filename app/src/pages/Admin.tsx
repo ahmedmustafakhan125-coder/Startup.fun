@@ -7,6 +7,7 @@ import { Coin } from '../components/Coin'
 import { coinTone } from '../components/StartupRow'
 import { Icon, Modal, PageHead, Panel, StatusBadge, cx } from '../components/ui'
 import { REVIEW_MAX_DAYS, REVIEW_MIN_DAYS, WINDDOWN_DAYS } from '../config'
+import { useAdminGate } from '../lib/adminGate'
 import { ago, compact, dateLabel, dateLong, dayMs, daysBetween, isoDay, shortAddr, usd, usdCompact } from '../lib/format'
 import { useStore, useUi } from '../store/useStore'
 import type { Application, Flag, Heartbeat } from '../store/types'
@@ -42,6 +43,9 @@ export default function Admin() {
   const { startups, applications, daily, trades, month } = useStore()
   const { adminRunChecks, adminSchedule, adminReject, adminListNow, adminCloseRaise, adminSetHeartbeat, adminAdvanceMonth, resetDemo } = useStore.getState()
   const toast = useUi(u => u.toast)
+  const openConnect = useUi(u => u.openConnect)
+  const adminWallet = useStore(st => st.adminWallet)
+  const lock = useAdminGate(g => g.lock)
   const nav = useNavigate()
   const [range, setRange] = useState(30)
   const [tab, setTab] = useState<'waiting' | 'scheduled' | 'closed' | 'flagged'>('waiting')
@@ -93,17 +97,36 @@ export default function Admin() {
     <div>
       <PageHead
         title="Admin"
-        lead="Platform numbers, the review queue and the heartbeat monitor. On devnet this page is open to everyone. In production it is limited to the admin wallet."
+        lead="Platform numbers, the review queue and the heartbeat monitor."
         right={
-          <div className="glass-flat flex p-1" style={{ borderRadius: 999 }} role="group" aria-label="Date range">
-            {[7, 30].map(r => (
-              <button key={r} onClick={() => setRange(r)} aria-pressed={range === r} className={cx('h-9 rounded-full px-4 text-sm font-semibold transition', range === r ? 'bg-white/[.14] text-ink' : 'text-ink2')}>
-                {r} days
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <div className="glass-flat flex p-1" style={{ borderRadius: 999 }} role="group" aria-label="Date range">
+              {[7, 30].map(r => (
+                <button key={r} onClick={() => setRange(r)} aria-pressed={range === r} className={cx('h-9 rounded-full px-4 text-sm font-semibold transition', range === r ? 'bg-white/[.14] text-ink' : 'text-ink2')}>
+                  {r} days
+                </button>
+              ))}
+            </div>
+            <button className="btn btn-glass btn-sm" onClick={lock}>
+              <Icon name="lock" size={15} />
+              Lock
+            </button>
           </div>
         }
       />
+
+      {/* The password opens the page. The server takes admin changes only from an admin wallet. */}
+      {!adminWallet && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber/30 bg-amber/10 p-4 text-[15px] text-[#ffd08a]">
+          <span className="flex items-center gap-2.5">
+            <Icon name="alert" />
+            Connect an admin wallet to load the review queue and the revenue numbers, and to approve, list or override.
+          </span>
+          <button className="btn btn-glass btn-sm" onClick={() => openConnect(true)}>
+            Connect wallet
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         <Kpi label={`Revenue, ${range} days`} value={usdCompact(revenue)} sub={`${usd(today.trading + today.verification + today.graduation)} today`} />
@@ -211,7 +234,7 @@ export default function Admin() {
           {LIVE ? (
             // On devnet the clock runs on-chain; each startup's Founder page shows its month and countdown.
             <span className="py-1.5 pr-3 text-[15px]">
-              On-chain clock: <strong>one month is five minutes</strong>
+              Devnet clock: <strong>one month is five minutes</strong>
             </span>
           ) : (
             <>
@@ -375,13 +398,13 @@ export default function Admin() {
                     const r = await adminRunChecks(app.id)
                     toast(
                       r.ok
-                        ? { tone: 'ok', title: 'Checks re-run', body: LIVE ? 'The automated checks ran again and the founder details are confirmed.' : 'Simulated on devnet: open checks now pass.' }
-                        : { tone: 'error', title: 'Could not re-run the checks', body: r.error },
+                        ? { tone: 'ok', title: 'Checks ran again', body: LIVE ? 'The automated checks ran again and the founder details are confirmed.' : 'Simulated on devnet: open checks now pass.' }
+                        : { tone: 'error', title: 'Could not run the checks again', body: r.error },
                     )
                   }}
                 >
                   <Icon name="refresh" size={15} />
-                  Re-run checks
+                  Run checks again
                 </button>
               )}
             </div>

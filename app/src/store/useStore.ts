@@ -21,7 +21,7 @@ import {
 import { LIVE } from '../chain/client'
 import { dayMs, isoDay } from '../lib/format'
 import { liveActions, liveSeed } from './live'
-import type { Application, DayStat, Draft, Flag, Heartbeat, Holding, Result, Startup, Trade } from './types'
+import type { Application, DayStat, Draft, Flag, Heartbeat, Holding, Leader, Result, Startup, Trade } from './types'
 
 // This store is the whole "backend" for now. Every action below maps to one
 // program instruction or API call later, so pages never touch the data directly.
@@ -91,6 +91,10 @@ export interface Data {
   draft: Draft
   /** Live mode: disagreements between the rule checks and the AI review, for admins. */
   flags: Flag[]
+  /** Live mode: the server's ranking of traders. Empty in mock mode, where it is worked out from `trades`. */
+  leaders: Leader[]
+  /** Live mode: the connected wallet is signed in and on the server's admin list. Always true in mock mode. */
+  adminWallet: boolean
 }
 
 // Money actions return a promise in live mode, where they wait for the wallet and the network.
@@ -142,6 +146,8 @@ const seed = (): Data => {
     holdings: seedHoldings(startups),
     draft: emptyDraft(),
     flags: [],
+    leaders: [],
+    adminWallet: true,
   }
 }
 
@@ -219,7 +225,7 @@ export const useStore = create<Data & Actions>()(
           trades: [
             { ...t, id: 't' + Date.now() + Math.random().toString(36).slice(2, 6), ts: Date.now(), wallet: st.wallet.address ?? DEMO_ADDRESS, mine: true },
             ...st.trades,
-          ].slice(0, 80),
+          ].slice(0, 120),
         }))
       const needWallet = (): string | null => (get().wallet.address ? null : 'Connect a wallet first.')
 
@@ -418,7 +424,7 @@ export const useStore = create<Data & Actions>()(
               const checks = { ...a.checks }
               ;(Object.keys(checks) as (keyof typeof checks)[]).forEach(k => {
                 if (checks[k].status !== 'passed')
-                  checks[k] = { status: 'passed', detail: 'Re-run by a reviewer and passed', checkedAt: Date.now() }
+                  checks[k] = { status: 'passed', detail: 'Run again by a reviewer and passed', checkedAt: Date.now() }
               })
               return { ...a, checks, status: a.status === 'submitted' ? 'in_review' : a.status }
             }),
@@ -614,7 +620,7 @@ export const useStore = create<Data & Actions>()(
     },
     {
       // Live mode keeps its own saved state so it never mixes with the demo data.
-      name: LIVE ? 'obverse-live-v1' : 'obverse-demo-v2',
+      name: LIVE ? 'obverse-live-v1' : 'obverse-demo-v3',
       storage: createJSONStorage(() => safeStorage),
       partialize: ({ startups, applications, trades, daily, month, wallet, holdings, draft }) => ({
         startups,

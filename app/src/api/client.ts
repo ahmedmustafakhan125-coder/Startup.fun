@@ -1,6 +1,6 @@
 // Typed HTTP client for the backend (live mode only). Pages never call this; store actions do.
 import { signMessageWithWallet } from '../chain/client'
-import type { Application, Check, Checks, DayStat, Flag, Heartbeat, Holding, Startup, Trade } from '../store/types'
+import type { Application, Check, Checks, DayStat, Flag, Heartbeat, Holding, Leader, Startup, Trade } from '../store/types'
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
 
@@ -66,6 +66,7 @@ export const api = {
   me: () => request<{ address: string; admin: boolean }>('GET', '/me', undefined, false).catch(() => null),
   startups: () => request<Profile[]>('GET', '/startups', undefined, false),
   trades: () => request<ServerTrade[]>('GET', '/trades', undefined, false),
+  leaderboard: () => request<Leader[]>('GET', '/leaderboard', undefined, false),
   /** Cost basis per startup id, from the wallet's indexed trades. */
   positions: (address: string) => request<{ positions: Record<string, Holding> }>('GET', `/wallets/${address}/positions`, undefined, false),
   stats: () => request<DayStat[]>('GET', '/admin/stats?range=60', undefined, false),

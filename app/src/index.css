@@ -706,3 +706,176 @@ select.input option {
   opacity: 1;
   transform: none;
 }
+
+/* ---------- How it works (homepage animation) ---------- */
+@layer components {
+  .hiw-stage {
+    display: grid;
+    place-items: center;
+    min-height: 318px;
+    padding: 26px 20px 28px;
+    background:
+      radial-gradient(70% 110% at 50% -10%, rgba(21, 88, 201, 0.22), transparent 70%),
+      radial-gradient(40% 60% at 50% 110%, rgba(212, 255, 36, 0.05), transparent 70%);
+  }
+  .hiw-scene {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    animation: route-in 0.4s ease both;
+  }
+  /* A row that lights up when its check passes; the tick inside pops at the same moment. */
+  .hiw-lit {
+    animation: hiw-lit 0.45s ease both;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes hiw-lit {
+    to {
+      border-color: rgba(212, 255, 36, 0.5);
+      background: rgba(212, 255, 36, 0.07);
+    }
+  }
+  .hiw-tick {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #d4ff24;
+    color: #0a0d02;
+    animation: hiw-pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+    animation-delay: var(--d, 0s);
+  }
+  .hiw-pop {
+    animation: hiw-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes hiw-pop {
+    from {
+      opacity: 0;
+      transform: translateY(6px) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  /* Review calendar: one cell per day, the answer window outlined. */
+  .hiw-day {
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+  .hiw-day[data-window='true'] {
+    border-color: rgba(212, 255, 36, 0.38);
+  }
+  .hiw-day-on {
+    animation: hiw-day 0.3s ease both;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes hiw-day {
+    from {
+      transform: scale(0.7);
+    }
+    to {
+      background: #d4ff24;
+      border-color: #d4ff24;
+      transform: none;
+    }
+  }
+  /* Raise: coins fall into a bar that fills. */
+  .hiw-track {
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+  }
+  .hiw-grow {
+    height: 100%;
+    border-radius: inherit;
+    transform-origin: left;
+    animation: hiw-grow 1.7s cubic-bezier(0.3, 0.6, 0.3, 1) both;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes hiw-grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: none;
+    }
+  }
+  .hiw-drop {
+    display: block;
+    animation: hiw-drop 0.9s cubic-bezier(0.5, 0, 0.9, 0.6) both;
+    animation-delay: var(--d, 0s);
+  }
+  @keyframes hiw-drop {
+    0% {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+    25% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(34px) scale(0.7);
+    }
+  }
+  /* Heartbeat line, drawn left to right. */
+  .hiw-pulse {
+    stroke-dasharray: 1;
+    animation: hiw-pulse 3.4s linear both;
+    animation-delay: 0.3s;
+    filter: drop-shadow(0 0 5px rgba(212, 255, 36, 0.55));
+  }
+  @keyframes hiw-pulse {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  /* The four step buttons under the stage. */
+  .hiw-step {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    text-align: left;
+    transition: background 0.2s ease;
+  }
+  .hiw-step:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+  .hiw-step[aria-current='step'] {
+    background: rgba(255, 255, 255, 0.055);
+  }
+  .hiw-step:focus-visible {
+    outline-offset: -3px;
+  }
+  .hiw-bar {
+    position: absolute;
+    left: 0;
+    top: -1px;
+    width: 100%;
+    height: 2px;
+    background: #d4ff24;
+    transform-origin: left;
+  }
+  .hiw-bar[data-run='true'] {
+    animation: hiw-grow var(--step-ms, 5s) linear both;
+  }
+}

@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Route, Routes, useLocation } from 'react-router-dom'
+import { AdminGate } from './components/AdminGate'
 import { ConnectModal, Footer, Nav, Toasts } from './components/Shell'
 import { Starfield } from './components/Starfield'
 import Admin from './pages/Admin'
@@ -9,6 +10,7 @@ import Home from './pages/Home'
 import ListWizard from './pages/ListWizard'
 import Portfolio from './pages/Portfolio'
 import StartupPage from './pages/StartupPage'
+import Trade from './pages/Trade'
 
 export default function App() {
   const { pathname } = useLocation()
@@ -23,11 +25,12 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/explore" element={<Explore />} />
+          <Route path="/trade" element={<Trade />} />
           <Route path="/s/:id" element={<StartupPage />} />
           <Route path="/list" element={<ListWizard />} />
           <Route path="/founder" element={<FounderDashboard />} />
           <Route path="/portfolio" element={<Portfolio />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin" element={<AdminGate><Admin /></AdminGate>} />
           <Route path="*" element={<Home />} />
         </Routes>
       </main>

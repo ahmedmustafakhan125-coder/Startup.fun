@@ -24,7 +24,7 @@ export function githubRoutes(app: FastifyInstance, { db, env }: { db: Db; env: E
     const [id, mac] = (req.query.state ?? '').split('.')
     const a = id ? await db.application.findUnique({ where: { id } }) : null
     if (!a || a.wallet !== req.wallet || mac !== sign(env.sessionSecret, `github.${a.id}.${req.wallet}`) || !req.query.code)
-      return reply.code(400).send({ error: 'BadState', message: 'That GitHub sign-in did not start here. Try again from the listing form.' })
+      return reply.code(400).send({ error: 'BadState', message: 'That GitHub login did not start here. Try again from the listing form.' })
     let token: string | undefined
     try {
       const res = await fetch('https://github.com/login/oauth/access_token', {
@@ -38,7 +38,7 @@ export function githubRoutes(app: FastifyInstance, { db, env }: { db: Db; env: E
       // handled below: no token
     }
     // The token is used once, here, and never stored.
-    await saveCheck(db, a.id, 'github', token ? await githubOwnership(a.github, token) : { status: 'failed', detail: 'GitHub sign-in did not complete.' })
+    await saveCheck(db, a.id, 'github', token ? await githubOwnership(a.github, token) : { status: 'failed', detail: 'GitHub login did not complete.' })
     return reply.redirect(`${env.appUrl}/list`)
   })
 }

@@ -19,13 +19,14 @@ npm run build:preview  # one self-contained index.html in dist-preview/
 
 | Route | Screen |
 |---|---|
-| `/` | Home: coin hero (click to flip), outcome cards, trading now, open raises, fee split |
+| `/` | Home: coin hero (click to flip), outcome cards, animated how it works, trading now, open raises, fee split |
 | `/explore` | All startups: search, category, sort, status filters |
+| `/trade` | Trade: coin list, price chart, buy/sell or commit, latest trades, traders leaderboard |
 | `/s/:id` | Startup: price chart, buy/sell or commit or refund, vaults, verification checklist, heartbeat bars, trades |
 | `/list` | Listing wizard: founder, startup, verification (DNS code, GitHub, socials, KYC), raise and budget, review and pay |
 | `/founder` | Founder: application timeline, monthly treasury claim, capped fee claim, token vesting, heartbeat checks |
 | `/portfolio` | Holdings, gain/loss, refunds, activity, demo USDC faucet |
-| `/admin` | Revenue, daily volume, escrow, review queue (approve, schedule, reject, list now), heartbeat controls, demo month clock |
+| `/admin` | Not in the menu, opens with the admin password. Revenue, daily volume, escrow, review queue (approve, schedule, reject, list now), heartbeat controls, demo month clock |
 
 ## How it is wired
 

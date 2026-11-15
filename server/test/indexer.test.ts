@@ -81,6 +81,12 @@ describe('indexer', () => {
     expect(trades[2]).toMatchObject({ startupId: 'quil', usdc: 90_000, tokens: 65_000_000 })
     expect((await app.inject({ method: 'GET', url: '/trades' })).json<Json[]>()).toHaveLength(3)
 
+    // The leaderboard counts the buy and the sale (gross), not the raise commit.
+    const leaders = (await app.inject({ method: 'GET', url: '/leaderboard' })).json<Json[]>()
+    expect(leaders).toHaveLength(1)
+    expect(leaders[0]).toMatchObject({ wallet: trades[0]!.wallet, trades: 2, top: 'quil' })
+    expect(leaders[0]!.volume).toBeCloseTo(sum('volume'), 6)
+
     const profile = (await app.inject({ method: 'GET', url: '/startups/quil' })).json<Json>()
     expect(profile).toMatchObject({ backers: 1, volumeTotal: sum('volume'), feesClaimedTotal: 0 })
     expect(profile.history).toHaveLength(3)

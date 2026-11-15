@@ -7,12 +7,13 @@ import { useStore, useUi } from '../store/useStore'
 import { Coin } from './Coin'
 import { Icon, Modal, cx } from './ui'
 
+// Admin is left out on purpose: it is reached by typing /admin and unlocking it.
 const links = [
   { to: '/explore', label: 'Explore', icon: 'grid' },
+  { to: '/trade', label: 'Trade', icon: 'chart' },
   { to: '/list', label: 'List a startup', short: 'List', icon: 'plus' },
   { to: '/portfolio', label: 'Portfolio', icon: 'wallet' },
   { to: '/founder', label: 'Founder', icon: 'briefcase' },
-  { to: '/admin', label: 'Admin', icon: 'gauge' },
 ]
 
 type PhantomProvider = { connect: () => Promise<{ publicKey: { toString(): string } }>; disconnect?: () => Promise<void> }
@@ -114,7 +115,7 @@ export function ConnectModal() {
             <Coin label="D" size={44} />
             <span>
               <span className="block font-semibold">Demo wallet</span>
-              <span className="block text-sm text-ink2">Pre-loaded, works in any browser</span>
+              <span className="block text-sm text-ink2">Ready to use in any browser</span>
             </span>
           </button>
         )}
@@ -214,7 +215,7 @@ export function Footer() {
         <span>
           {BRAND} runs on Solana {NETWORK.toLowerCase()} with demo funds. Startups and figures shown here are sample data.
         </span>
-        <span>Tokens are not shares and carry no claim beyond the on-chain refund rule.</span>
+        <span>Tokens are not shares and carry no claim beyond the refund rule in the program.</span>
       </div>
     </footer>
   )

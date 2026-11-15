@@ -317,6 +317,7 @@ When an admin approves an application with a date, a job lists it at that time b
 | `GET /startups`, `GET /startups/:id` | anyone | profile + cached on-chain state + checks + latest AI review |
 | `GET /startups/:id/trades`, `/history`, `/updates` | anyone | trade list, price series, founder updates |
 | `GET /wallets/:address/positions` | anyone | cost basis and activity for the portfolio page |
+| `GET /leaderboard` | anyone | top 50 wallets by pool volume, for the trade page |
 | `POST /applications` | founder | submit, with the fee payment signature |
 | `GET /applications/mine` | founder | status and timeline |
 | `POST /applications/:id/verify/:check` | founder | run or start a check (domain, github, socials, kyc) |
